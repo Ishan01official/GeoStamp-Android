@@ -20,6 +20,7 @@ app/build/outputs/apk/debug/app-debug.apk
 - Main branch verification: `main` is updated to `origin/main` and build verified after the Phase 2 merge.
 - Phase 2 camera MVP: implemented in code and build verified, but still needs physical-device validation.
 - Phase 3 GPS and sensor core: implemented in code and build verified, but still needs physical-device validation.
+- Physical testing started on device `A142`; camera preview, GPS, compass display, and one stamped capture were validated.
 - Later phases are not complete yet. Some supporting primitives exist, but they are not release-ready features.
 
 ## Phase 1 - Repository Audit And Build Repair
@@ -42,7 +43,7 @@ Still left:
 
 ## Phase 2 - Camera Implementation
 
-Status: Implemented in code, build verified. Needs real-device testing.
+Status: Implemented in code, build verified, partially physical-device tested.
 
 Completed:
 - CameraX live preview.
@@ -70,7 +71,7 @@ Partially done:
 - Orientation is handled for still bitmap stamping, but EXIF orientation and advanced metadata handling are not complete.
 
 Needs physical-device validation:
-- Rear camera preview and capture.
+- Rear camera preview and capture. Basic rear preview and one capture passed on A142.
 - Front camera preview and capture.
 - Flash behavior on real hardware.
 - Tap-to-focus accuracy.
@@ -79,12 +80,12 @@ Needs physical-device validation:
 - Exposure slider behavior on devices that support exposure compensation.
 - Timer countdown and delayed capture.
 - Aspect ratio and resolution output.
-- Saved stamped photo orientation.
+- Saved stamped photo orientation. One portrait capture saved upright at 3072x4080.
 - Motorola Edge 70 Fusion behavior.
 
 ## Phase 3 - GPS And Sensor System
 
-Status: Core offline GPS and compass implementation is done and build verified. Needs physical-device testing.
+Status: Core offline GPS and compass implementation is done, build verified, partially physical-device tested.
 
 Completed:
 - Continuous foreground fine/coarse location updates while the camera screen is active.
@@ -104,11 +105,17 @@ Completed:
 - Unit tests cover location map links, freshness, location update text, compass cardinal directions, and compass reading display.
 
 Still left:
-- Physical-device validation for GPS, network provider fallback, approximate location, stale location, and weak signal.
-- Physical-device validation for compass availability, accuracy changes, and true-heading behavior.
+- Physical-device validation for network provider fallback, approximate location, stale location, and weak signal.
+- Physical-device validation for compass accuracy changes and external true-heading correctness.
 - Full address support is not implemented because online reverse geocoding must remain opt-in.
 - Google Maps/OpenStreetMap links exist in the model but are not exposed in the UI yet.
 - More automated tests around Android permission/provider failure paths need fakes or instrumentation tests.
+
+Physical-device notes:
+- A142 displayed `gps precise GPS 2m, 0s old`.
+- A142 displayed compass status such as `NE 27 deg (high)`.
+- A controlled capture saved a stamped image with latitude, longitude, and +/-2 m accuracy.
+- See `docs/physical-test-report-2026-10-10.md`.
 
 ## Phase 4 - Professional Photo Stamping
 

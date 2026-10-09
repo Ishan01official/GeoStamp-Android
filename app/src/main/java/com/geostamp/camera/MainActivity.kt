@@ -37,6 +37,8 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.geostamp.camera.capture.CaptureTimer
 import com.geostamp.camera.capture.FlashMode
 import com.geostamp.camera.capture.PhotoAspectRatio
@@ -176,7 +178,16 @@ class MainActivity : ComponentActivity() {
             addView(buildExposureControls())
             addView(buildLastPhotoRow())
         }
+        applySystemBarsPadding(root)
         return root
+    }
+
+    private fun applySystemBarsPadding(root: LinearLayout) {
+        ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            insets
+        }
     }
 
     private fun fullFrameLayoutParams(): FrameLayout.LayoutParams =
