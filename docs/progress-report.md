@@ -294,3 +294,36 @@ Still left:
 - Known issues and limitations after device testing.
 - Google Play release documentation.
 - Release-ready signed AAB.
+
+## UI/UX Redesign And Stamp Engine (v0.2.0)
+
+Status: Implemented, build verified (`assembleDebug testDebugUnitTest lintDebug` pass, lint has only dependency-update warnings), partially physical-device tested on A142.
+
+Black saved photo investigation:
+- The black JPEGs from the first device test (`GeoStamp_1791574259664.jpg`, mean luminance under 1%) were caused by the scene, not the code: the phone was lying face down at night. The stock Nothing camera showed the same black frame and the ambient light sensor read about 11 lux.
+- The decode path was still hardened: JPEG buffers are decoded directly into a mutable ARGB bitmap and rotated with an explicit matrix.
+- `ImagePipelineTest` (instrumented, 4 tests, passed on A142) checks rotation, JPEG brightness, that the stamp only covers its card, and that a MediaStore round trip keeps the scene.
+- A real 3072x4080 capture from the new build shows the scene upright with the stamp card.
+
+Completed:
+- Compose single-activity app with navigation: camera, gallery, viewer, settings, stamp settings.
+- Material 3 dynamic color, a neutral fallback palette, and a Follow system / Light / Dark setting.
+- New camera UI, controls bottom sheet, zoom presets, focus ring, live stamp preview and photo/video modes.
+- Resolution-aware stamp renderer with four templates and per-template field customization persisted in DataStore.
+- Opt-in address lookup, map tiles and weather with prefetching and place-validity checks.
+- EXIF writing: date/time, offset, orientation, stamped/original marker, and optional GPS.
+- Gallery with filters, selection, share, delete (with system consent fallback), details and batch stamping.
+- English and Hindi strings, plurals, content descriptions, and 48 dp touch targets.
+- 26 JVM unit tests and 4 instrumented tests.
+
+Physical-device notes (A142, 2026-10-10):
+- App launches; camera, GPS chip (±4 m), compass chip and live stamp render.
+- Settings screen renders with dynamic dark colors. Template choice persisted.
+- Photo capture saved upright at 3072x4080 with a readable stamp and EXIF written.
+- Video recorded at 1920x1080 H.264 with AAC audio.
+
+Still left:
+- Videos are saved without a burned-in stamp (needs a CameraX effect pipeline).
+- Address, map and weather were not exercised on the device because they are off by default.
+- Front camera, flash, timer, batch stamping, delete consent, landscape captures and Hindi locale still need hands-on device checks.
+- Dependency versions were not upgraded in this change.

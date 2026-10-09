@@ -1,3 +1,30 @@
-# GeoStamp privacy (initial development version)
+# GeoStamp privacy
 
-GeoStamp v0.1.0 does not request INTERNET permission and includes no advertising, analytics or account SDKs. Photos are processed locally and saved to Pictures/GeoStamp. The app requests camera access for taking photos and optional foreground location access for GPS stamps. Photos may visibly include precise coordinates and timestamps: review them before sharing. No background location is requested. This document describes the initial source implementation, not an independent security audit. Optional online features, if added later, will require an updated privacy notice and explicit user control.
+GeoStamp has no advertising, analytics, crash reporting or account SDKs. Photos and videos are processed on the device and saved to `Pictures/GeoStamp` and `Movies/GeoStamp`. Nothing is uploaded automatically, and app data is excluded from cloud backup and device transfer.
+
+## Permissions
+
+| Permission | Why | When |
+|---|---|---|
+| Camera | Take photos and videos | Required for the camera screen |
+| Location (precise or approximate) | Coordinates, accuracy and true-north heading on stamps | Optional. Foreground only, while the camera screen is open. No background location |
+| Microphone | Sound in videos | Optional. Requested when switching to Video. Videos record silently without it |
+| Internet | Only for the optional online features below | Never used unless you turn a feature on |
+
+## Optional online features (all off by default)
+
+| Feature | Sent to | Data sent |
+|---|---|---|
+| Address lookup | Your phone's platform geocoder (on most phones, Google) | Current coordinates |
+| Map thumbnails | OpenStreetMap tile servers (`tile.openstreetmap.org`) | The map tiles around your position, which reveal approximate location. Tiles are cached on the device for 7 days |
+| Weather | Open-Meteo (`api.open-meteo.com`) | Coordinates rounded to 3 decimals (about 100 m) |
+
+Results are fetched in the background and only used for photos taken near the place they were fetched for. The shutter never waits for the network, and missing data is left off the stamp rather than guessed.
+
+## Metadata
+
+- Visible stamps can include precise coordinates and time. Review photos before sharing.
+- Writing GPS coordinates into EXIF metadata is a separate setting and is **off** by default. When it is off, GeoStamp removes GPS tags from the photos it saves.
+- "Keep unstamped original" saves a second, unstamped copy. It follows the same EXIF setting.
+
+This document describes the source implementation; it is not an independent security audit.
