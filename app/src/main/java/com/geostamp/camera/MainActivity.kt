@@ -15,8 +15,11 @@ import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
+import android.view.MotionEvent
+import android.view.ScaleGestureDetector
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.SeekBar
@@ -25,6 +28,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
@@ -33,8 +37,10 @@ import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import com.geostamp.camera.location.LocationStamp
 import com.geostamp.camera.stamps.StampTextFormatter
+import com.geostamp.camera.ui.GridOverlayView
 import java.util.Locale
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 /** Initial offline prototype. No network or background location access. */
 class MainActivity : ComponentActivity() {
@@ -47,6 +53,7 @@ class MainActivity : ComponentActivity() {
     @Volatile private var lastLocation: Location? = null
     private val worker = Executors.newSingleThreadExecutor()
     private val stampTextFormatter = StampTextFormatter()
+    private lateinit var scaleGestureDetector: ScaleGestureDetector
 
     private val permissionRequest =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
@@ -66,12 +73,29 @@ class MainActivity : ComponentActivity() {
             setPadding(20, 20, 20, 20)
         }
         preview = PreviewView(this)
+        setupPreviewGestures()
+        val previewFrame = FrameLayout(this).apply {
+            addView(
+                preview,
+                FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+            )
+            addView(
+                GridOverlayView(this@MainActivity),
+                FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+            )
+        }
         val shutter = Button(this).apply {
             text = "CAPTURE GPS PHOTO"
             setOnClickListener { takePhoto() }
         }
         root.addView(status)
-        root.addView(preview, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
+        root.addView(previewFrame, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         val controls = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         val switch = Button(this).apply {
             text = "Switch camera"
@@ -110,6 +134,46 @@ class MainActivity : ComponentActivity() {
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION
         ))
+    }
+
+    private fun setupPreviewGestures() {
+        scaleGestureDetector = ScaleGestureDetector(
+            this,
+            object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+                override fun onScale(detector: ScaleGestureDetector): Boolean {
+                    val camera = boundCamera ?: return false
+                    val zoomState = camera.cameraInfo.zoomState.value ?: return false
+                    val targetZoom = (zoomState.zoomRatio * detector.scaleFactor)
+                        .coerceIn(zoomState.minZoomRatio, zoomState.maxZoomRatio)
+                    camera.cameraControl.setZoomRatio(targetZoom)
+                    status.text = "Zoom %.1fx".format(Locale.US, targetZoom)
+                    return true
+                }
+            }
+        )
+        preview.setOnClickListener { }
+        preview.setOnTouchListener { view, event ->
+            scaleGestureDetector.onTouchEvent(event)
+            if (event.action == MotionEvent.ACTION_UP && !scaleGestureDetector.isInProgress) {
+                view.performClick()
+                focusAt(event.x, event.y)
+            }
+            true
+        }
+    }
+
+    private fun focusAt(x: Float, y: Float) {
+        val camera = boundCamera ?: return
+        val meteringPoint = preview.meteringPointFactory.createPoint(x, y)
+        val action = FocusMeteringAction.Builder(
+            meteringPoint,
+            FocusMeteringAction.FLAG_AF or FocusMeteringAction.FLAG_AE
+        )
+            .setAutoCancelDuration(3, TimeUnit.SECONDS)
+            .build()
+
+        camera.cameraControl.startFocusAndMetering(action)
+        status.text = "Focus and exposure set"
     }
 
     private fun updateLocation() {
