@@ -1,49 +1,45 @@
 package com.geostamp.camera.capture
 
-import android.util.Size
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.ImageCapture
 
-enum class FlashMode(val label: String, val imageCaptureMode: Int) {
-    OFF("Flash off", ImageCapture.FLASH_MODE_OFF),
-    AUTO("Flash auto", ImageCapture.FLASH_MODE_AUTO),
-    ON("Flash on", ImageCapture.FLASH_MODE_ON);
+enum class FlashMode(val imageCaptureMode: Int) {
+    OFF(ImageCapture.FLASH_MODE_OFF),
+    AUTO(ImageCapture.FLASH_MODE_AUTO),
+    ON(ImageCapture.FLASH_MODE_ON);
 
     fun next(): FlashMode = entries[(ordinal + 1) % entries.size]
 }
 
-enum class CaptureTimer(val label: String, val seconds: Int) {
-    OFF("Timer off", 0),
-    THREE_SECONDS("Timer 3s", 3),
-    TEN_SECONDS("Timer 10s", 10);
+enum class CaptureTimer(val seconds: Int) {
+    OFF(0),
+    THREE_SECONDS(3),
+    TEN_SECONDS(10);
 
     fun next(): CaptureTimer = entries[(ordinal + 1) % entries.size]
 }
 
-enum class PhotoAspectRatio(val label: String, val cameraXRatio: Int) {
-    FOUR_THREE("Aspect 4:3", AspectRatio.RATIO_4_3),
-    SIXTEEN_NINE("Aspect 16:9", AspectRatio.RATIO_16_9);
+enum class PhotoAspectRatio(val cameraXRatio: Int, val portraitWidthOverHeight: Float) {
+    FOUR_THREE(AspectRatio.RATIO_4_3, 3f / 4f),
+    SIXTEEN_NINE(AspectRatio.RATIO_16_9, 9f / 16f);
 
     fun next(): PhotoAspectRatio = entries[(ordinal + 1) % entries.size]
 }
 
-enum class PhotoResolution(val label: String) {
-    DEFAULT("Resolution auto"),
-    BALANCED("Resolution balanced"),
-    HIGH("Resolution high");
+/** Output size policy. Exact sizes depend on what the active camera supports. */
+enum class PhotoResolution {
+    /** Up to about 12 MP: sharp and fast on most phones. */
+    DEFAULT,
+
+    /** About 5 MP for smaller files. */
+    BALANCED,
+
+    /** The largest size the camera offers for the aspect ratio. */
+    HIGH;
 
     fun next(): PhotoResolution = entries[(ordinal + 1) % entries.size]
-
-    fun targetSize(aspectRatio: PhotoAspectRatio): Size? =
-        when (this) {
-            DEFAULT -> null
-            BALANCED -> when (aspectRatio) {
-                PhotoAspectRatio.FOUR_THREE -> Size(2560, 1920)
-                PhotoAspectRatio.SIXTEEN_NINE -> Size(2560, 1440)
-            }
-            HIGH -> when (aspectRatio) {
-                PhotoAspectRatio.FOUR_THREE -> Size(4000, 3000)
-                PhotoAspectRatio.SIXTEEN_NINE -> Size(3840, 2160)
-            }
-        }
 }
+
+enum class CaptureMode { PHOTO, VIDEO }
+
+enum class LensFacing { BACK, FRONT }
