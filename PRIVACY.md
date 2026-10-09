@@ -1,0 +1,3 @@
+# GeoStamp privacy (initial development version)
+
+GeoStamp v0.1.0 does not request INTERNET permission and includes no advertising, analytics or account SDKs. Photos are processed locally and saved to Pictures/GeoStamp. The app requests camera access for taking photos and optional foreground location access for GPS stamps. Photos may visibly include precise coordinates and timestamps: review them before sharing. No background location is requested. This document describes the initial source implementation, not an independent security audit. Optional online features, if added later, will require an updated privacy notice and explicit user control.
