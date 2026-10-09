@@ -8,9 +8,6 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
-import android.location.Location
-import android.location.LocationListener
-import android.location.LocationManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
@@ -44,7 +41,11 @@ import com.geostamp.camera.capture.CaptureTimer
 import com.geostamp.camera.capture.FlashMode
 import com.geostamp.camera.capture.PhotoAspectRatio
 import com.geostamp.camera.capture.PhotoResolution
+import com.geostamp.camera.location.ForegroundLocationTracker
 import com.geostamp.camera.location.LocationStamp
+import com.geostamp.camera.location.LocationUpdate
+import com.geostamp.camera.sensors.CompassMonitor
+import com.geostamp.camera.sensors.CompassUpdate
 import com.geostamp.camera.stamps.StampTextFormatter
 import com.geostamp.camera.ui.GridOverlayView
 import java.util.Locale
@@ -67,6 +68,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var lastPhotoPreview: ImageView
     private lateinit var lastPhotoLabel: TextView
     private lateinit var scaleGestureDetector: ScaleGestureDetector
+    private lateinit var locationTracker: ForegroundLocationTracker
+    private lateinit var compassMonitor: CompassMonitor
 
     private var imageCapture: ImageCapture? = null
     private var boundCamera: Camera? = null
@@ -77,9 +80,13 @@ class MainActivity : ComponentActivity() {
     private var photoResolution = PhotoResolution.DEFAULT
     private var gridEnabled = true
     private var pendingTimedCapture = false
+    private var cameraStatusText = "Camera idle"
+    private var locationStatusText = "Location waiting"
+    private var compassStatusText = "Compass waiting"
+    private var runtimePermissionsResolved = false
 
     @Volatile
-    private var lastLocation: Location? = null
+    private var currentLocation: LocationStamp? = null
 
     private val worker = Executors.newSingleThreadExecutor()
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -87,16 +94,20 @@ class MainActivity : ComponentActivity() {
 
     private val permissionRequest =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { grants ->
+            runtimePermissionsResolved = true
             if (grants[Manifest.permission.CAMERA] == true) {
                 startCamera()
             } else {
-                status.text = "Camera permission required"
+                setCameraStatus("Camera permission required")
             }
-            updateLocation()
+            startLocationTracking()
+            startCompass()
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        locationTracker = ForegroundLocationTracker(this)
+        compassMonitor = CompassMonitor(this)
         setContentView(buildCameraUi())
         permissionRequest.launch(
             arrayOf(
@@ -105,6 +116,27 @@ class MainActivity : ComponentActivity() {
                 Manifest.permission.ACCESS_COARSE_LOCATION
             )
         )
+    }
+
+    override fun onStart() {
+        super.onStart()
+        if (!runtimePermissionsResolved) return
+
+        if (hasPermission(Manifest.permission.CAMERA)) {
+            startCamera()
+        }
+        startLocationTracking()
+        startCompass()
+    }
+
+    override fun onStop() {
+        if (::locationTracker.isInitialized) {
+            locationTracker.stop()
+        }
+        if (::compassMonitor.isInitialized) {
+            compassMonitor.stop()
+        }
+        super.onStop()
     }
 
     private fun buildCameraUi(): LinearLayout {
@@ -304,7 +336,7 @@ class MainActivity : ComponentActivity() {
                         .coerceIn(zoomState.minZoomRatio, zoomState.maxZoomRatio)
                     camera.cameraControl.setZoomRatio(targetZoom)
                     updateZoomSlider(targetZoom, zoomState.minZoomRatio, zoomState.maxZoomRatio)
-                    status.text = "Zoom %.1fx".format(Locale.US, targetZoom)
+                    setCameraStatus("Zoom %.1fx".format(Locale.US, targetZoom))
                     return true
                 }
             }
@@ -331,53 +363,43 @@ class MainActivity : ComponentActivity() {
             .build()
 
         camera.cameraControl.startFocusAndMetering(action)
-        status.text = "Focus and exposure set"
+        setCameraStatus("Focus and exposure set")
     }
 
-    private fun updateLocation() {
-        val fine = hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
-        val coarse = hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
-        if (!fine && !coarse) {
-            status.text = "Location denied; camera remains available"
-            return
-        }
-        val manager = getSystemService(LOCATION_SERVICE) as LocationManager
-        val provider = when {
-            fine && manager.isProviderEnabled(LocationManager.GPS_PROVIDER) -> LocationManager.GPS_PROVIDER
-            manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER) -> LocationManager.NETWORK_PROVIDER
-            else -> {
-                status.text = "Location provider disabled"
-                return
-            }
-        }
-        try {
-            val listener = object : LocationListener {
-                override fun onLocationChanged(location: Location) {
-                    updateLocationStatus(location)
+    private fun startLocationTracking() {
+        locationTracker.start { update ->
+            when (update) {
+                is LocationUpdate.Available -> {
+                    currentLocation = update.location
+                    compassMonitor.setReferenceLocation(update.location)
+                    val stampNote = if (update.location.isAccurateEnough(MAX_STAMP_ACCURACY_METERS)) {
+                        ""
+                    } else {
+                        " - weak for stamp"
+                    }
+                    setLocationStatus(update.displayText() + stampNote)
+                }
+                else -> {
+                    currentLocation = null
+                    compassMonitor.setReferenceLocation(null)
+                    setLocationStatus(update.displayText())
                 }
             }
-            @Suppress("DEPRECATION")
-            manager.requestSingleUpdate(provider, listener, Looper.getMainLooper())
-            mainHandler.postDelayed({
-                if (lastLocation == null) {
-                    status.text = "Location unavailable"
-                }
-            }, LOCATION_TIMEOUT_MILLIS)
-        } catch (_: SecurityException) {
-            status.text = "Location permission unavailable"
-        } catch (_: IllegalArgumentException) {
-            status.text = "Location provider unavailable"
         }
     }
 
-    private fun updateLocationStatus(location: Location) {
-        lastLocation = location
-        status.text = "GPS ${location.accuracy.toInt()} m accuracy"
+    private fun startCompass() {
+        compassMonitor.start { update ->
+            when (update) {
+                CompassUpdate.Unavailable -> setCompassStatus(update.displayText())
+                is CompassUpdate.Available -> setCompassStatus(update.displayText())
+            }
+        }
     }
 
     private fun startCamera() {
         if (!hasPermission(Manifest.permission.CAMERA)) {
-            status.text = "Camera permission required"
+            setCameraStatus("Camera permission required")
             return
         }
         val future = ProcessCameraProvider.getInstance(this)
@@ -386,7 +408,7 @@ class MainActivity : ComponentActivity() {
                 try {
                     bindCamera(future.get(), allowResolutionFallback = true)
                 } catch (e: Exception) {
-                    status.text = "Camera error: ${e.message}"
+                    setCameraStatus("Camera error: ${e.message}")
                 }
             },
             ContextCompat.getMainExecutor(this)
@@ -409,7 +431,7 @@ class MainActivity : ComponentActivity() {
             boundCamera = provider.bindToLifecycle(this, selector, cameraPreview, capture)
             imageCapture = capture
             configureCameraControls()
-            status.text = "Camera ready: ${photoAspectRatio.label}, ${photoResolution.label}"
+            setCameraStatus("Camera ready: ${photoAspectRatio.label}, ${photoResolution.label}")
         } catch (e: IllegalArgumentException) {
             if (allowResolutionFallback && photoResolution != PhotoResolution.DEFAULT) {
                 photoResolution = PhotoResolution.DEFAULT
@@ -488,7 +510,7 @@ class MainActivity : ComponentActivity() {
         val ratio = zoomState.minZoomRatio +
             (zoomState.maxZoomRatio - zoomState.minZoomRatio) * progress / 100f
         camera.cameraControl.setZoomRatio(ratio)
-        status.text = "Zoom %.1fx".format(Locale.US, ratio)
+        setCameraStatus("Zoom %.1fx".format(Locale.US, ratio))
     }
 
     private fun configureExposureSlider(camera: Camera) {
@@ -537,16 +559,14 @@ class MainActivity : ComponentActivity() {
             captureNow()
             return
         }
-        status.text = "Capturing in $remainingSeconds"
+        setCameraStatus("Capturing in $remainingSeconds")
         mainHandler.postDelayed({ runCountdown(remainingSeconds - 1) }, ONE_SECOND_MILLIS)
     }
 
     private fun captureNow() {
         val capture = imageCapture ?: return
         capture.targetRotation = currentDisplayRotation()
-        val location = lastLocation
-            ?.takeIf { System.currentTimeMillis() - it.time < MAX_LOCATION_AGE_MILLIS }
-            ?.let(LocationStamp::from)
+        val location = captureLocationForStamp()
 
         capture.takePicture(
             worker,
@@ -584,6 +604,20 @@ class MainActivity : ComponentActivity() {
                 }
             }
         )
+    }
+
+    private fun captureLocationForStamp(): LocationStamp? {
+        val location = currentLocation ?: return null
+        val nowMillis = System.currentTimeMillis()
+        if (!location.isFresh(nowMillis, MAX_LOCATION_AGE_MILLIS)) {
+            setCameraStatus("Location stale; capturing without GPS")
+            return null
+        }
+        if (!location.isAccurateEnough(MAX_STAMP_ACCURACY_METERS)) {
+            setCameraStatus("Location weak; capturing without GPS")
+            return null
+        }
+        return location
     }
 
     private fun ImageProxy.toUprightBitmap(): Bitmap {
@@ -650,7 +684,7 @@ class MainActivity : ComponentActivity() {
         val thumbnail = bitmap.thumbnail(maxWidth = 220)
         lastPhotoPreview.setImageBitmap(thumbnail)
         lastPhotoLabel.text = "Last photo saved: ${uri.lastPathSegment ?: "GeoStamp"}"
-        status.text = "Photo saved"
+        setCameraStatus("Photo saved")
     }
 
     private fun Bitmap.thumbnail(maxWidth: Int): Bitmap {
@@ -665,16 +699,42 @@ class MainActivity : ComponentActivity() {
     private fun hasPermission(permission: String): Boolean =
         ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
 
+    private fun setCameraStatus(text: String) {
+        cameraStatusText = text
+        renderStatus()
+    }
+
+    private fun setLocationStatus(text: String) {
+        locationStatusText = text
+        renderStatus()
+    }
+
+    private fun setCompassStatus(text: String) {
+        compassStatusText = text
+        renderStatus()
+    }
+
+    private fun renderStatus() {
+        status.text = listOf(cameraStatusText, locationStatusText, compassStatusText)
+            .joinToString(separator = "\n")
+    }
+
     override fun onDestroy() {
         mainHandler.removeCallbacksAndMessages(null)
+        if (::locationTracker.isInitialized) {
+            locationTracker.stop()
+        }
+        if (::compassMonitor.isInitialized) {
+            compassMonitor.stop()
+        }
         worker.shutdown()
         super.onDestroy()
     }
 
     private companion object {
         const val JPEG_QUALITY = 93
-        const val LOCATION_TIMEOUT_MILLIS = 10_000L
         const val MAX_LOCATION_AGE_MILLIS = 120_000L
+        const val MAX_STAMP_ACCURACY_METERS = 100f
         const val ONE_SECOND_MILLIS = 1_000L
     }
 }

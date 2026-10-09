@@ -13,13 +13,23 @@
 - [x] Aspect ratio and requested resolution presets
 - [x] Last photo thumbnail preview
 - [x] Capture rotation handling for stamped bitmap output
-- [ ] Capture-time location freshness and accuracy threshold
-- [ ] Handle permission revocation and disabled GPS
+- [x] Capture-time location freshness and accuracy threshold
+- [x] Handle permission denial and disabled GPS
 - [ ] Optional unmodified original
 - [ ] Camera rotation, EXIF orientation, lifecycle and memory tests
 - [x] Automated unit tests and CI build workflow
 
-## Milestone 3 — stamp customization
+## Milestone 3 — GPS and sensors
+- [x] Foreground GPS/network location updates
+- [x] Provider status, stale location, approximate location and weak accuracy states
+- [x] OpenStreetMap and Google Maps link helpers
+- [x] Compass sensor integration with calibration status
+- [x] Magnetic heading with true-heading correction when location is available
+- [ ] Full address via opt-in reverse geocoding
+- [ ] Expose map links in the UI
+- [ ] Physical-device validation for GPS and compass behavior
+
+## Milestone 4 — stamp customization
 - [ ] Opt-in address geocoding
 - [ ] Compass and customizable templates
 - [ ] Optional map thumbnail, optional weather

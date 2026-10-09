@@ -1,6 +1,6 @@
 # GeoStamp Progress Report
 
-Updated: 2026-10-09
+Updated: 2026-10-10
 
 This file reports actual implementation status. "Build verified" means the local command below passed:
 
@@ -17,7 +17,9 @@ app/build/outputs/apk/debug/app-debug.apk
 ## Current Summary
 
 - Phase 1 build repair: implemented and build verified.
+- Main branch verification: `main` is updated to `origin/main` and build verified after the Phase 2 merge.
 - Phase 2 camera MVP: implemented in code and build verified, but still needs physical-device validation.
+- Phase 3 GPS and sensor core: implemented in code and build verified, but still needs physical-device validation.
 - Later phases are not complete yet. Some supporting primitives exist, but they are not release-ready features.
 
 ## Phase 1 - Repository Audit And Build Repair
@@ -82,26 +84,31 @@ Needs physical-device validation:
 
 ## Phase 3 - GPS And Sensor System
 
-Status: Partially implemented.
+Status: Core offline GPS and compass implementation is done and build verified. Needs physical-device testing.
 
 Completed:
-- Optional foreground fine/coarse location request.
+- Continuous foreground fine/coarse location updates while the camera screen is active.
 - Camera remains usable when location is denied.
-- Latitude, longitude, accuracy, timestamp, altitude, and speed model exists.
-- Freshness helper exists for location snapshots.
+- Latitude, longitude, accuracy, timestamp, altitude, speed, provider, approximate-location flag, and optional address field model exists.
+- Freshness and accuracy helpers exist for location snapshots.
+- Capture now refuses stale or weak location data instead of silently stamping it.
 - OpenStreetMap URL helper exists.
-- Basic compass cardinal formatting helper exists.
+- Google Maps URL helper exists.
+- Provider status model exists for GPS/network/selected provider.
+- GPS disabled, permission denied, stale last-known location, provider unavailable, approximate location, and weak accuracy states have explicit UI text.
+- Foreground location tracker removes updates when the activity stops.
+- Compass sensor monitor exists using accelerometer and magnetometer.
+- Compass UI reports cardinal direction, degrees, and calibration accuracy.
+- Magnetic heading is corrected toward true heading when a location reference is available.
+- Compass unavailable state is handled.
+- Unit tests cover location map links, freshness, location update text, compass cardinal directions, and compass reading display.
 
 Still left:
-- Continuous reliable GPS acquisition strategy.
-- Location freshness and accuracy UI thresholds.
-- GPS disabled, weak signal, approximate location, and stale-location handling beyond basic messages.
-- Full address support.
-- True compass sensor integration with calibration state.
-- Magnetic vs true north handling.
-- Provider status details.
-- Google Maps link helper.
-- Tests around permission denial and provider failure paths.
+- Physical-device validation for GPS, network provider fallback, approximate location, stale location, and weak signal.
+- Physical-device validation for compass availability, accuracy changes, and true-heading behavior.
+- Full address support is not implemented because online reverse geocoding must remain opt-in.
+- Google Maps/OpenStreetMap links exist in the model but are not exposed in the UI yet.
+- More automated tests around Android permission/provider failure paths need fakes or instrumentation tests.
 
 ## Phase 4 - Professional Photo Stamping
 
@@ -194,11 +201,13 @@ Still left:
 
 ## Phase 10 - Testing
 
-Status: Early unit tests only.
+Status: Early unit tests plus build/lint verification.
 
 Completed:
 - Unit tests for compass cardinal formatting.
 - Unit tests for location freshness.
+- Unit tests for location map links and location status text.
+- Unit tests for compass reading display.
 - Unit tests for stamp text formatting.
 - Local build/test/lint command passes.
 
@@ -249,16 +258,16 @@ Still left:
 Status: In progress.
 
 Completed:
-- Work is on branch `codex/build-repair`.
-- Build repair commit pushed.
-- Phase 2 camera gesture/grid commit pushed.
+- Phase 1 and Phase 2 work is merged into `main`.
+- `main` was fetched, fast-forwarded locally, and build verified on 2026-10-10.
+- Phase 3 work is on branch `codex/phase-3-location-sensors`.
 
 Current local changes after this report:
-- Phase 2 expanded camera MVP.
-- This progress report.
+- Phase 3 GPS and compass implementation.
+- Updated progress report and roadmap.
 
 Still left:
-- Commit and push the expanded Phase 2 work after final verification.
+- Commit and push Phase 3 after final verification.
 
 ## Phase 14 - Required Deliverables
 
@@ -278,4 +287,3 @@ Still left:
 - Known issues and limitations after device testing.
 - Google Play release documentation.
 - Release-ready signed AAB.
-
