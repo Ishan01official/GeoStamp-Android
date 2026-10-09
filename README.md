@@ -2,17 +2,19 @@
 
 A privacy-first, ad-free, offline GPS photo camera for Android.
 
-## First implementation (v0.1.0)
+## Features (v0.2.0)
 
-- CameraX rear-camera preview and capture
-- Optional precise/coarse foreground location
-- Timestamp, GPS coordinates and accuracy burned into JPEG
-- Local saving to Pictures/GeoStamp using MediaStore
-- No account, no ads, no analytics SDK and no INTERNET permission
-- Camera works even when location is denied
+- Edge-to-edge camera with a large, undistorted preview. A compact GPS, heading and settings bar sits on top, with a side rail for flash, aspect, resolution, timer and grid
+- Zoom pills limited to levels the camera supports, plus pinch to zoom, tap to focus with an animated ring, an exposure slider and a rule-of-thirds grid
+- Photo and video modes, a timer, front and rear cameras, and a live stamp preview drawn by the same engine as saved photos
+- Professional stamp card in four templates (Minimal, Classic, Map card, Professional) with per-template fields, position, size, color, opacity, custom text, logo, and date and coordinate formats
+- Real-data-only stamps: missing address, map, weather or heading is omitted, never invented
+- Optional, off-by-default address lookup, OpenStreetMap mini map and Open-Meteo weather. See [privacy](PRIVACY.md)
+- Local gallery with photo/video and stamped/unstamped filters, a full-screen viewer, details, share, delete, open in maps and batch stamping
+- Material 3 with dynamic system colors and a neutral fallback, a Follow system / Light / Dark setting, and English and Hindi
+- No ads, accounts or analytics. Camera works without location
 
-**Status:** Initial source committed; compilation and on-device testing are not yet verified. Do not treat this as a Play Store-ready release.
-**Current verification:** `./gradlew --no-daemon clean assembleDebug testDebugUnitTest lintDebug` passes locally. A debug APK is generated at `app/build/outputs/apk/debug/app-debug.apk`.
+Architecture: single activity, Jetpack Compose, MVVM with StateFlow, DataStore settings, and a CameraX `LifecycleCameraController`. The image pipeline (`capture/`, `stamps/`) has no UI dependencies.
 
 ## Build
 
@@ -26,6 +28,6 @@ Command-line build:
 
 ## Roadmap
 
-Full address via opt-in reverse geocoding, compass, adjustable stamp templates, original-photo option, optional map thumbnail, optional weather, automated tests, accessibility, translations and Play Store listing.
+Stamped video (burned-in frames), more languages, wider device testing and a Play Store listing.
 
 See [privacy](PRIVACY.md) and [roadmap](docs/roadmap.md).

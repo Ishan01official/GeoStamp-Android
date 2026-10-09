@@ -6,7 +6,7 @@
 - [x] Optional foreground location and visible GPS timestamp
 - [x] Local MediaStore saving
 - [x] Compile with Android SDK 35
-- [ ] Physical-device validation
+- [x] Initial physical-device install, launch, preview and capture validation
 
 ## Milestone 2 — reliable MVP
 - [x] Camera controls: switch, flash modes, focus, zoom, exposure, grid, timer
@@ -15,6 +15,7 @@
 - [x] Capture rotation handling for stamped bitmap output
 - [x] Capture-time location freshness and accuracy threshold
 - [x] Handle permission denial and disabled GPS
+- [x] Initial real-device stamped capture test
 - [ ] Optional unmodified original
 - [ ] Camera rotation, EXIF orientation, lifecycle and memory tests
 - [x] Automated unit tests and CI build workflow
@@ -25,9 +26,10 @@
 - [x] OpenStreetMap and Google Maps link helpers
 - [x] Compass sensor integration with calibration status
 - [x] Magnetic heading with true-heading correction when location is available
+- [x] Initial real-device GPS and compass display test
 - [ ] Full address via opt-in reverse geocoding
 - [ ] Expose map links in the UI
-- [ ] Physical-device validation for GPS and compass behavior
+- [ ] Physical-device validation for approximate location, weak signal and provider-disabled states
 
 ## Milestone 4 — stamp customization
 - [ ] Opt-in address geocoding

@@ -20,8 +20,17 @@ data class LocationStamp(
     fun isFresh(nowMillis: Long, maxAgeMillis: Long = 30_000L): Boolean =
         nowMillis >= measuredAtMillis && ageMillis(nowMillis) <= maxAgeMillis
 
+    /** False for sources without a measured accuracy, such as EXIF from imported photos. */
+    val hasAccuracy: Boolean get() = !accuracyMeters.isNaN()
+
     fun isAccurateEnough(maxAccuracyMeters: Float): Boolean =
-        accuracyMeters <= maxAccuracyMeters
+        hasAccuracy && accuracyMeters <= maxAccuracyMeters
+
+    fun distanceMetersTo(other: LocationStamp): Float {
+        val result = FloatArray(1)
+        Location.distanceBetween(latitude, longitude, other.latitude, other.longitude, result)
+        return result[0]
+    }
 
     fun coordinates(): String = String.format(Locale.US, "%.6f, %.6f", latitude, longitude)
     fun openStreetMapUrl(): String =

@@ -20,6 +20,7 @@ app/build/outputs/apk/debug/app-debug.apk
 - Main branch verification: `main` is updated to `origin/main` and build verified after the Phase 2 merge.
 - Phase 2 camera MVP: implemented in code and build verified, but still needs physical-device validation.
 - Phase 3 GPS and sensor core: implemented in code and build verified, but still needs physical-device validation.
+- Physical testing started on device `A142`; camera preview, GPS, compass display, and one stamped capture were validated.
 - Later phases are not complete yet. Some supporting primitives exist, but they are not release-ready features.
 
 ## Phase 1 - Repository Audit And Build Repair
@@ -42,7 +43,7 @@ Still left:
 
 ## Phase 2 - Camera Implementation
 
-Status: Implemented in code, build verified. Needs real-device testing.
+Status: Implemented in code, build verified, partially physical-device tested.
 
 Completed:
 - CameraX live preview.
@@ -70,7 +71,7 @@ Partially done:
 - Orientation is handled for still bitmap stamping, but EXIF orientation and advanced metadata handling are not complete.
 
 Needs physical-device validation:
-- Rear camera preview and capture.
+- Rear camera preview and capture. Basic rear preview and one capture passed on A142.
 - Front camera preview and capture.
 - Flash behavior on real hardware.
 - Tap-to-focus accuracy.
@@ -79,12 +80,12 @@ Needs physical-device validation:
 - Exposure slider behavior on devices that support exposure compensation.
 - Timer countdown and delayed capture.
 - Aspect ratio and resolution output.
-- Saved stamped photo orientation.
+- Saved stamped photo orientation. One portrait capture saved upright at 3072x4080.
 - Motorola Edge 70 Fusion behavior.
 
 ## Phase 3 - GPS And Sensor System
 
-Status: Core offline GPS and compass implementation is done and build verified. Needs physical-device testing.
+Status: Core offline GPS and compass implementation is done, build verified, partially physical-device tested.
 
 Completed:
 - Continuous foreground fine/coarse location updates while the camera screen is active.
@@ -104,11 +105,17 @@ Completed:
 - Unit tests cover location map links, freshness, location update text, compass cardinal directions, and compass reading display.
 
 Still left:
-- Physical-device validation for GPS, network provider fallback, approximate location, stale location, and weak signal.
-- Physical-device validation for compass availability, accuracy changes, and true-heading behavior.
+- Physical-device validation for network provider fallback, approximate location, stale location, and weak signal.
+- Physical-device validation for compass accuracy changes and external true-heading correctness.
 - Full address support is not implemented because online reverse geocoding must remain opt-in.
 - Google Maps/OpenStreetMap links exist in the model but are not exposed in the UI yet.
 - More automated tests around Android permission/provider failure paths need fakes or instrumentation tests.
+
+Physical-device notes:
+- A142 displayed `gps precise GPS 2m, 0s old`.
+- A142 displayed compass status such as `NE 27 deg (high)`.
+- A controlled capture saved a stamped image with latitude, longitude, and +/-2 m accuracy.
+- See `docs/physical-test-report-2026-10-10.md`.
 
 ## Phase 4 - Professional Photo Stamping
 
@@ -287,3 +294,36 @@ Still left:
 - Known issues and limitations after device testing.
 - Google Play release documentation.
 - Release-ready signed AAB.
+
+## UI/UX Redesign And Stamp Engine (v0.2.0)
+
+Status: Implemented, build verified (`assembleDebug testDebugUnitTest lintDebug` pass, lint has only dependency-update warnings), partially physical-device tested on A142.
+
+Black saved photo investigation:
+- The black JPEGs from the first device test (`GeoStamp_1791574259664.jpg`, mean luminance under 1%) were caused by the scene, not the code: the phone was lying face down at night. The stock Nothing camera showed the same black frame and the ambient light sensor read about 11 lux.
+- The decode path was still hardened: JPEG buffers are decoded directly into a mutable ARGB bitmap and rotated with an explicit matrix.
+- `ImagePipelineTest` (instrumented, 4 tests, passed on A142) checks rotation, JPEG brightness, that the stamp only covers its card, and that a MediaStore round trip keeps the scene.
+- A real 3072x4080 capture from the new build shows the scene upright with the stamp card.
+
+Completed:
+- Compose single-activity app with navigation: camera, gallery, viewer, settings, stamp settings.
+- Material 3 dynamic color, a neutral fallback palette, and a Follow system / Light / Dark setting.
+- New camera UI, controls bottom sheet, zoom presets, focus ring, live stamp preview and photo/video modes.
+- Resolution-aware stamp renderer with four templates and per-template field customization persisted in DataStore.
+- Opt-in address lookup, map tiles and weather with prefetching and place-validity checks.
+- EXIF writing: date/time, offset, orientation, stamped/original marker, and optional GPS.
+- Gallery with filters, selection, share, delete (with system consent fallback), details and batch stamping.
+- English and Hindi strings, plurals, content descriptions, and 48 dp touch targets.
+- 26 JVM unit tests and 4 instrumented tests.
+
+Physical-device notes (A142, 2026-10-10):
+- App launches; camera, GPS chip (±4 m), compass chip and live stamp render.
+- Settings screen renders with dynamic dark colors. Template choice persisted.
+- Photo capture saved upright at 3072x4080 with a readable stamp and EXIF written.
+- Video recorded at 1920x1080 H.264 with AAC audio.
+
+Still left:
+- Videos are saved without a burned-in stamp (needs a CameraX effect pipeline).
+- Address, map and weather were not exercised on the device because they are off by default.
+- Front camera, flash, timer, batch stamping, delete consent, landscape captures and Hindi locale still need hands-on device checks.
+- Dependency versions were not upgraded in this change.
