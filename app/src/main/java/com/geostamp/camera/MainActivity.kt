@@ -8,9 +8,12 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.location.Location
+import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore
 import android.view.ViewGroup
 import android.widget.Button
@@ -28,8 +31,8 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
-import java.text.SimpleDateFormat
-import java.util.Date
+import com.geostamp.camera.location.LocationStamp
+import com.geostamp.camera.stamps.StampTextFormatter
 import java.util.Locale
 import java.util.concurrent.Executors
 
@@ -43,6 +46,7 @@ class MainActivity : ComponentActivity() {
     private var flashEnabled = false
     @Volatile private var lastLocation: Location? = null
     private val worker = Executors.newSingleThreadExecutor()
+    private val stampTextFormatter = StampTextFormatter()
 
     private val permissionRequest =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
@@ -122,16 +126,27 @@ class MainActivity : ComponentActivity() {
             else -> { status.text = "Location provider disabled"; return }
         }
         try {
-            manager.getCurrentLocation(provider, null, mainExecutor) { location ->
-                lastLocation = location
-                status.text = if (location == null) "Location unavailable" else
-                    "GPS ±${location.accuracy.toInt()}m • ${location.latitude}, ${location.longitude}"
+            val listener = object : LocationListener {
+                override fun onLocationChanged(location: Location) {
+                    updateLocationStatus(location)
+                }
             }
+            manager.requestSingleUpdate(provider, listener, Looper.getMainLooper())
+            Handler(Looper.getMainLooper()).postDelayed({
+                if (lastLocation == null) {
+                    status.text = "Location unavailable"
+                }
+            }, 10_000L)
         } catch (_: SecurityException) {
             status.text = "Location permission unavailable"
         } catch (_: IllegalArgumentException) {
             status.text = "Location provider unavailable"
         }
+    }
+
+    private fun updateLocationStatus(location: Location) {
+        lastLocation = location
+        status.text = "GPS ±${location.accuracy.toInt()}m • ${location.latitude}, ${location.longitude}"
     }
 
     private fun startCamera() {
@@ -159,7 +174,9 @@ class MainActivity : ComponentActivity() {
     private fun takePhoto() {
         val capture = imageCapture ?: return
         // Snapshot the last known location; a fresh location request is asynchronous.
-        val location = lastLocation?.takeIf { System.currentTimeMillis() - it.time < 120_000L }
+        val location = lastLocation
+            ?.takeIf { System.currentTimeMillis() - it.time < 120_000L }
+            ?.let(LocationStamp::from)
         capture.takePicture(worker, object : ImageCapture.OnImageCapturedCallback() {
             override fun onCaptureSuccess(image: ImageProxy) {
                 try {
@@ -185,7 +202,7 @@ class MainActivity : ComponentActivity() {
         })
     }
 
-    private fun stamp(source: Bitmap, location: Location?): Bitmap {
+    private fun stamp(source: Bitmap, location: LocationStamp?): Bitmap {
         val output = source.copy(Bitmap.Config.ARGB_8888, true)
         val canvas = Canvas(output)
         val size = (output.width / 34f).coerceAtLeast(20f)
@@ -194,14 +211,8 @@ class MainActivity : ComponentActivity() {
             color = Color.WHITE
             setShadowLayer(2f, 1f, 1f, Color.BLACK)
         }
-        val lines = listOf(
-            SimpleDateFormat("dd MMM yyyy HH:mm:ss", Locale.getDefault()).format(Date()),
-            location?.let { "Lat: %.6f  Lon: %.6f".format(Locale.US, it.latitude, it.longitude) }
-                ?: "Location unavailable",
-            location?.let { "Accuracy: ±%.0f m".format(Locale.US, it.accuracy) }
-                ?: "GeoStamp • offline"
-        )
-        val band = size * 4.4f
+        val lines = stampTextFormatter.lines(location)
+        val band = size * (lines.size + 1.4f)
         canvas.drawRect(0f, output.height - band, output.width.toFloat(), output.height.toFloat(),
             Paint().apply { color = 0xB9000000.toInt() })
         lines.forEachIndexed { index, line ->
