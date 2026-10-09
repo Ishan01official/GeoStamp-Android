@@ -16,6 +16,8 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.SeekBar
+import androidx.camera.core.Camera
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
@@ -36,6 +38,9 @@ class MainActivity : ComponentActivity() {
     private lateinit var preview: PreviewView
     private lateinit var status: TextView
     private var imageCapture: ImageCapture? = null
+    private var boundCamera: Camera? = null
+    private var frontCamera = false
+    private var flashEnabled = false
     @Volatile private var lastLocation: Location? = null
     private val worker = Executors.newSingleThreadExecutor()
 
@@ -63,6 +68,37 @@ class MainActivity : ComponentActivity() {
         }
         root.addView(status)
         root.addView(preview, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
+        val controls = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val switch = Button(this).apply {
+            text = "Switch camera"
+            setOnClickListener { frontCamera = !frontCamera; startCamera() }
+        }
+        val flash = Button(this).apply {
+            text = "Flash off"
+            setOnClickListener {
+                flashEnabled = !flashEnabled
+                imageCapture?.flashMode = if (flashEnabled) ImageCapture.FLASH_MODE_ON else ImageCapture.FLASH_MODE_OFF
+                text = if (flashEnabled) "Flash on" else "Flash off"
+            }
+        }
+        controls.addView(switch, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        controls.addView(flash, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        root.addView(controls)
+        val zoom = SeekBar(this).apply {
+            max = 100
+            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(bar: SeekBar?, progress: Int, fromUser: Boolean) {
+                    if (fromUser) {
+                        val state = boundCamera?.cameraInfo?.zoomState?.value ?: return
+                        val ratio = state.minZoomRatio + (state.maxZoomRatio - state.minZoomRatio) * progress / 100f
+                        boundCamera?.cameraControl?.setZoomRatio(ratio)
+                    }
+                }
+                override fun onStartTrackingTouch(bar: SeekBar?) {}
+                override fun onStopTrackingTouch(bar: SeekBar?) {}
+            })
+        }
+        root.addView(zoom)
         root.addView(shutter, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         setContentView(root)
         permissionRequest.launch(arrayOf(
@@ -112,7 +148,8 @@ class MainActivity : ComponentActivity() {
                     .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                     .build()
                 provider.unbindAll()
-                provider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, cameraPreview, imageCapture)
+                boundCamera = provider.bindToLifecycle(this, if (frontCamera) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA, cameraPreview, imageCapture)
+                imageCapture?.flashMode = if (flashEnabled) ImageCapture.FLASH_MODE_ON else ImageCapture.FLASH_MODE_OFF
             } catch (e: Exception) {
                 status.text = "Camera error: ${e.message}"
             }
