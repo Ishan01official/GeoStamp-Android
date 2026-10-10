@@ -295,7 +295,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
 
     fun switchLens() {
         val state = _capture.value
-        if (state.recordingSeconds != null || !state.hasFrontCamera) return
+        if (state.recordingSeconds != null || !state.hasFrontCamera || state.mode.isDual()) return
         val next = if (state.lens == LensFacing.BACK) LensFacing.FRONT else LensFacing.BACK
         _capture.update { it.copy(lens = next) }
         applyCameraConfig()

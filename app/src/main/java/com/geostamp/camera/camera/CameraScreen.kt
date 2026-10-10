@@ -495,7 +495,7 @@ private fun BottomControls(
                 CameraChip(stringResource(R.string.gps_not_ready), icon = Icons.Outlined.GpsNotFixed, iconTint = CameraColors.Warning)
         }
         addressBar?.invoke()
-        if (!simpleMode) {
+        if (!simpleMode && !capture.mode.isDual()) {
             ZoomSelector(presets = zoomPresets, current = zoomRatio, onSelect = viewModel::setZoom)
         }
         ModeSelector(
@@ -513,7 +513,7 @@ private fun BottomControls(
             countdownActive = capture.countdown != null,
             isProcessing = capture.isProcessing,
             thumbnail = capture.lastCapture?.thumbnail,
-            canSwitchCamera = capture.hasFrontCamera,
+            canSwitchCamera = capture.hasFrontCamera && !capture.mode.isDual(),
             iconRotation = iconRotation,
             onShutter = viewModel::onShutter,
             onOpenGallery = onOpenGallery,
