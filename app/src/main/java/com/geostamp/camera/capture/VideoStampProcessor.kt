@@ -245,7 +245,7 @@ class VideoStampProcessor(
                 buffer.clear()
                 val size = extractor.readSampleData(buffer, 0)
                 if (size < 0) break
-                info.set(0, size, extractor.sampleTime, extractor.sampleFlags)
+                info.set(0, size, extractor.sampleTime, extractor.sampleFlags.toMuxerFlags())
                 muxer.writeSampleData(targetTrack, buffer, info)
                 extractor.advance()
             }
@@ -274,6 +274,14 @@ class VideoStampProcessor(
 
     private fun estimateBitRate(width: Int, height: Int, frameRate: Int): Int =
         (width * height * frameRate * BITS_PER_PIXEL).toInt().coerceIn(MIN_VIDEO_BIT_RATE, MAX_VIDEO_BIT_RATE)
+
+    private fun Int.toMuxerFlags(): Int {
+        check(this and MediaExtractor.SAMPLE_FLAG_ENCRYPTED == 0) { "Encrypted audio samples are not supported" }
+        var flags = 0
+        if (this and MediaExtractor.SAMPLE_FLAG_SYNC != 0) flags = flags or MediaCodec.BUFFER_FLAG_KEY_FRAME
+        if (this and MediaExtractor.SAMPLE_FLAG_PARTIAL_FRAME != 0) flags = flags or MediaCodec.BUFFER_FLAG_PARTIAL_FRAME
+        return flags
+    }
 
     private data class TrackFormat(val trackIndex: Int, val format: MediaFormat)
 

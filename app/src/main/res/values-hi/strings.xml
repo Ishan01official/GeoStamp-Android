@@ -20,6 +20,8 @@
     <string name="cd_focus">फ़ोकस बिंदु</string>
     <string name="mode_photo">फ़ोटो</string>
     <string name="mode_video">वीडियो</string>
+    <string name="mode_dual_photo">डुअल फ़ोटो</string>
+    <string name="mode_dual_video">डुअल वीडियो</string>
     <string name="flash_off">बंद</string>
     <string name="flash_auto">ऑटो</string>
     <string name="flash_on">चालू</string>
@@ -36,6 +38,9 @@
     <string name="gps_denied">लोकेशन बंद</string>
     <string name="gps_accuracy">±%d मी</string>
     <string name="gps_stale">पुराना फ़िक्स</string>
+    <string name="gps_ready">लोकेशन तैयार</string>
+    <string name="gps_improving">GPS सटीकता सुधर रही है</string>
+    <string name="gps_unavailable">लोकेशन उपलब्ध नहीं</string>
     <string name="compass_unavailable">कम्पास नहीं</string>
     <string name="compass_calibrate">कैलिब्रेट करें</string>
     <string name="permission_camera_title">कैमरा अनुमति चाहिए</string>
@@ -48,6 +53,9 @@
     <string name="error_capture_failed">फ़ोटो नहीं ली जा सकी</string>
     <string name="error_save_failed">फ़ोटो सहेजी नहीं जा सकी</string>
     <string name="error_video_failed">वीडियो रिकॉर्ड नहीं हो सका</string>
+    <string name="error_video_stamp_failed">वीडियो पर स्टैम्प नहीं लग सका; मूल वीडियो सहेजा गया</string>
+    <string name="error_dual_capture_unavailable">इस डिवाइस पर डुअल कैप्चर उपलब्ध नहीं है</string>
+    <string name="video_stamping_note">स्टैम्प वाला वीडियो सहेजा जा रहा है</string>
     <string name="stamp_off_badge">स्टैम्प बंद</string>
 
     <string name="diag_camera">कैमरा</string>
@@ -68,6 +76,8 @@
     <string name="ctl_timer">टाइमर</string>
     <string name="ctl_focus">टैप करके फ़ोकस</string>
     <string name="ctl_focus_summary">फ़ोकस और मीटरिंग के लिए प्रीव्यू पर टैप करें। 3 सेकंड बाद रीसेट होता है।</string>
+    <string name="ctl_simple_mode">सरल कैमरा मोड</string>
+    <string name="ctl_simple_mode_summary">बड़े आवश्यक नियंत्रण दिखाता है और उन्नत कैमरा विकल्प सेटिंग्स में रखता है।</string>
     <string name="ctl_zoom">ज़ूम</string>
     <string name="ctl_stamp_template">स्टैम्प टेम्पलेट</string>
     <string name="ctl_customize_stamp">स्टैम्प बदलें</string>
@@ -142,6 +152,14 @@
     <string name="setting_max_accuracy_summary">±%d मी से कम सटीक फ़िक्स स्टैम्प पर नहीं लगते</string>
     <string name="setting_max_age">अधिकतम लोकेशन आयु</string>
     <string name="setting_max_age_summary">%d से. से पुराने फ़िक्स को पुराना माना जाता है</string>
+    <string name="setting_location_refresh">लोकेशन डिस्प्ले रिफ़्रेश</string>
+    <string name="location_refresh_stable">स्थिर (30 सेकंड)</string>
+    <string name="location_refresh_balanced">संतुलित (10 सेकंड)</string>
+    <string name="location_refresh_live">लाइव</string>
+    <string name="setting_compass_smoothing">कम्पास स्मूदिंग</string>
+    <string name="compass_smoothing_smooth">स्मूद</string>
+    <string name="compass_smoothing_balanced">संतुलित</string>
+    <string name="compass_smoothing_responsive">तेज़ प्रतिक्रिया</string>
     <string name="setting_address">पता खोज</string>
     <string name="setting_address_summary">निर्देशांक आपके फ़ोन के जियोकोडिंग प्रदाता को भेजता है। डिफ़ॉल्ट रूप से बंद।</string>
     <string name="setting_map_tiles">मैप थंबनेल</string>
