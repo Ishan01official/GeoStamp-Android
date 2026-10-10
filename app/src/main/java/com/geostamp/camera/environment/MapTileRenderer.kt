@@ -81,22 +81,30 @@ class MapTileRenderer(
         }
     }
 
-    /** Providers require visible credit; it is part of the thumbnail so every stamp that shows a map carries it. */
+    /**
+     * Providers require visible credit; it is part of the thumbnail so every stamp that shows a map carries it.
+     * Each provider gets its own line, and a line that is still too wide is shrunk rather than cut off.
+     */
     private fun drawAttribution(canvas: Canvas, text: String) {
-        val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-            textSize = OUTPUT_SIZE * 0.06f
-            color = Color.argb(225, 40, 40, 40)
-        }
         val pad = OUTPUT_SIZE * 0.02f
-        val textWidth = paint.measureText(text).coerceAtMost(OUTPUT_SIZE - 2 * pad)
-        canvas.drawRect(
-            OUTPUT_SIZE - textWidth - 2 * pad,
-            OUTPUT_SIZE - paint.textSize - 2 * pad,
-            OUTPUT_SIZE.toFloat(),
-            OUTPUT_SIZE.toFloat(),
-            Paint().apply { color = Color.argb(170, 255, 255, 255) }
-        )
-        canvas.drawText(text, OUTPUT_SIZE - textWidth - pad, OUTPUT_SIZE - pad * 1.6f, paint)
+        val maxWidth = OUTPUT_SIZE - 4 * pad
+        val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(225, 40, 40, 40) }
+        val lines = attributionLines(text)
+        val sizes = lines.map { line ->
+            paint.textSize = ATTRIBUTION_TEXT_SIZE
+            val width = paint.measureText(line)
+            if (width > maxWidth) ATTRIBUTION_TEXT_SIZE * maxWidth / width else ATTRIBUTION_TEXT_SIZE
+        }
+        val lineHeight = sizes.maxOf { it } * 1.15f
+        val boxWidth = lines.indices.maxOf { i -> paint.apply { textSize = sizes[i] }.measureText(lines[i]) } + 2 * pad
+        val boxTop = OUTPUT_SIZE - lines.size * lineHeight - 2 * pad
+        canvas.drawRect(OUTPUT_SIZE - boxWidth, boxTop, OUTPUT_SIZE.toFloat(), OUTPUT_SIZE.toFloat(),
+            Paint().apply { color = Color.argb(170, 255, 255, 255) })
+        lines.forEachIndexed { i, line ->
+            paint.textSize = sizes[i]
+            val baseline = boxTop + pad + (i + 1) * lineHeight - lineHeight * 0.22f
+            canvas.drawText(line, OUTPUT_SIZE - pad - paint.measureText(line), baseline, paint)
+        }
     }
 
     fun clearCache() {
@@ -125,6 +133,11 @@ class MapTileRenderer(
         const val OUTPUT_SIZE = 512
         private const val CACHE_FOLDER = "map_tiles"
         private const val CACHE_MAX_AGE_MILLIS = 7L * 24 * 60 * 60 * 1000
+        private const val ATTRIBUTION_TEXT_SIZE = OUTPUT_SIZE * 0.06f
+
+        /** One line per provider credit, as joined by [com.geostamp.camera.maps.MapStyle.attribution]. */
+        fun attributionLines(attribution: String): List<String> =
+            attribution.split(" · ").map(String::trim).filter(String::isNotEmpty)
 
         /** Web Mercator pixel coordinates at [zoom]. */
         fun worldPixel(latitude: Double, longitude: Double, zoom: Int): Pair<Double, Double> {
