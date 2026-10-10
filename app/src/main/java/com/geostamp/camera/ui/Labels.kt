@@ -3,6 +3,7 @@ package com.geostamp.camera.ui
 import androidx.annotation.StringRes
 import com.geostamp.camera.R
 import com.geostamp.camera.capture.CaptureTimer
+import com.geostamp.camera.capture.CaptureMode
 import com.geostamp.camera.capture.FlashMode
 import com.geostamp.camera.capture.PhotoAspectRatio
 import com.geostamp.camera.capture.PhotoResolution
@@ -31,6 +32,15 @@ val CaptureTimer.labelRes: Int
         CaptureTimer.OFF -> R.string.timer_off
         CaptureTimer.THREE_SECONDS -> R.string.timer_3
         CaptureTimer.TEN_SECONDS -> R.string.timer_10
+    }
+
+@get:StringRes
+val CaptureMode.labelRes: Int
+    get() = when (this) {
+        CaptureMode.PHOTO -> R.string.mode_photo
+        CaptureMode.VIDEO -> R.string.mode_video
+        CaptureMode.DUAL_PHOTO -> R.string.mode_dual_photo
+        CaptureMode.DUAL_VIDEO -> R.string.mode_dual_video
     }
 
 @get:StringRes

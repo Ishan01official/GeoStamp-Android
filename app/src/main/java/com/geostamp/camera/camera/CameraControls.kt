@@ -93,7 +93,7 @@ fun SideControls(
             rotation = iconRotation
         ) { onCameraChange { it.copy(flashMode = it.flashMode.next()) } }
 
-        if (mode == CaptureMode.PHOTO && !simpleMode) {
+        if (mode.isPhotoMode() && !simpleMode) {
             SideTextButton(
                 text = stringResource(camera.aspectRatio.labelRes),
                 description = stringResource(R.string.cd_aspect, stringResource(camera.aspectRatio.labelRes)),
@@ -238,7 +238,13 @@ fun ZoomSelector(
 }
 
 @Composable
-fun ModeSelector(mode: CaptureMode, enabled: Boolean, onSelect: (CaptureMode) -> Unit, modifier: Modifier = Modifier) {
+fun ModeSelector(
+    mode: CaptureMode,
+    enabled: Boolean,
+    supportedModes: Set<CaptureMode>,
+    onSelect: (CaptureMode) -> Unit,
+    modifier: Modifier = Modifier
+) {
     Row(
         modifier
             .clip(RoundedCornerShape(50))
@@ -247,9 +253,11 @@ fun ModeSelector(mode: CaptureMode, enabled: Boolean, onSelect: (CaptureMode) ->
         horizontalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         listOf(
-            CaptureMode.PHOTO to (R.string.mode_photo to Icons.Outlined.Photo),
-            CaptureMode.VIDEO to (R.string.mode_video to Icons.Outlined.Videocam)
-        ).forEach { (option, labelAndIcon) ->
+            CaptureMode.PHOTO,
+            CaptureMode.VIDEO,
+            CaptureMode.DUAL_PHOTO,
+            CaptureMode.DUAL_VIDEO
+        ).filter { option -> option in supportedModes }.forEach { option ->
             val isSelected = option == mode
             val background by animateColorAsState(if (isSelected) CameraColors.Selected else CameraColors.Scrim.copy(alpha = 0f), label = "modeBg")
             Row(
@@ -265,7 +273,7 @@ fun ModeSelector(mode: CaptureMode, enabled: Boolean, onSelect: (CaptureMode) ->
                 horizontalArrangement = Arrangement.Center
             ) {
                 Text(
-                    stringResource(labelAndIcon.first),
+                    stringResource(option.labelRes),
                     style = CameraLabel,
                     color = if (isSelected) CameraColors.OnSelected else CameraColors.Content
                 )
@@ -351,8 +359,8 @@ private fun ShutterButton(
 ) {
     val description = stringResource(
         when {
-            mode == CaptureMode.VIDEO && isRecording -> R.string.cd_shutter_video_stop
-            mode == CaptureMode.VIDEO -> R.string.cd_shutter_video_start
+            mode.isVideoMode() && isRecording -> R.string.cd_shutter_video_stop
+            mode.isVideoMode() -> R.string.cd_shutter_video_start
             countdownActive -> R.string.cd_shutter_cancel_timer
             else -> R.string.cd_shutter_photo
         }
@@ -366,7 +374,7 @@ private fun ShutterButton(
         label = "shutterInner"
     )
     val innerColor by animateColorAsState(
-        if (mode == CaptureMode.VIDEO) CameraColors.Recording else CameraColors.ShutterFill,
+        if (mode.isVideoMode()) CameraColors.Recording else CameraColors.ShutterFill,
         label = "shutterColor"
     )
     Box(

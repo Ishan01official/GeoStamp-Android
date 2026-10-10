@@ -83,7 +83,7 @@ fun CameraControlsSheet(
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceS)
             )
-            if (mode == CaptureMode.PHOTO) {
+            if (mode.isPhotoMode()) {
                 SegmentedRow(
                     title = stringResource(R.string.ctl_resolution),
                     options = PhotoResolution.entries,

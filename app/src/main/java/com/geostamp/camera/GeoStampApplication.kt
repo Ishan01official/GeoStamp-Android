@@ -5,6 +5,7 @@ import android.content.Context
 import com.geostamp.camera.capture.MediaStoreWriter
 import com.geostamp.camera.capture.PhotoProcessor
 import com.geostamp.camera.capture.VideoStampProcessor
+import com.geostamp.camera.camera.CameraCapabilityRepository
 import com.geostamp.camera.environment.AddressResolver
 import com.geostamp.camera.environment.EnvironmentRepository
 import com.geostamp.camera.environment.MapTileRenderer
@@ -36,6 +37,7 @@ class AppContainer(context: Context) {
     val applicationScope = CoroutineScope(SupervisorJob())
 
     val settingsRepository = SettingsRepository(appContext)
+    val cameraCapabilityRepository = CameraCapabilityRepository(appContext)
     val locationRepository = LocationRepository(ForegroundLocationTracker(appContext))
     val compassRepository = CompassRepository(CompassMonitor(appContext))
     val stampResources = StampResources(appContext)

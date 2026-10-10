@@ -87,12 +87,12 @@ class CameraSession(context: Context) {
         if (previous?.lens != config.lens) controller.cameraSelector = config.lens.selector()
         if (previous?.mode != config.mode) {
             controller.setEnabledUseCases(
-                if (config.mode == CaptureMode.PHOTO) CameraController.IMAGE_CAPTURE else CameraController.VIDEO_CAPTURE
+                if (config.mode.isPhotoMode()) CameraController.IMAGE_CAPTURE else CameraController.VIDEO_CAPTURE
             )
         }
-        val previewRatio = if (config.mode == CaptureMode.VIDEO) PhotoAspectRatio.SIXTEEN_NINE else config.aspectRatio
+        val previewRatio = if (config.mode.isVideoMode()) PhotoAspectRatio.SIXTEEN_NINE else config.aspectRatio
         val previousPreviewRatio = previous?.let {
-            if (it.mode == CaptureMode.VIDEO) PhotoAspectRatio.SIXTEEN_NINE else it.aspectRatio
+            if (it.mode.isVideoMode()) PhotoAspectRatio.SIXTEEN_NINE else it.aspectRatio
         }
         if (previousPreviewRatio != previewRatio) {
             controller.previewResolutionSelector = ResolutionSelector.Builder()
@@ -103,7 +103,7 @@ class CameraSession(context: Context) {
             controller.imageCaptureResolutionSelector = captureSelector(config.aspectRatio, config.resolution)
         }
         controller.imageCaptureFlashMode = config.flashMode.imageCaptureMode
-        controller.enableTorch(config.mode == CaptureMode.VIDEO && config.flashMode == FlashMode.ON)
+        controller.enableTorch(config.mode.isVideoMode() && config.flashMode == FlashMode.ON)
         applied = config
     }
 
@@ -183,3 +183,7 @@ class CameraSession(context: Context) {
         const val FOCUS_RESET_SECONDS = 3L
     }
 }
+
+fun CaptureMode.isPhotoMode(): Boolean = this == CaptureMode.PHOTO || this == CaptureMode.DUAL_PHOTO
+
+fun CaptureMode.isVideoMode(): Boolean = this == CaptureMode.VIDEO || this == CaptureMode.DUAL_VIDEO

@@ -40,6 +40,6 @@ enum class PhotoResolution {
     fun next(): PhotoResolution = entries[(ordinal + 1) % entries.size]
 }
 
-enum class CaptureMode { PHOTO, VIDEO }
+enum class CaptureMode { PHOTO, VIDEO, DUAL_PHOTO, DUAL_VIDEO }
 
 enum class LensFacing { BACK, FRONT }

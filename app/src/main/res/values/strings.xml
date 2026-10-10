@@ -22,6 +22,8 @@
     <string name="cd_focus">Focus point</string>
     <string name="mode_photo">Photo</string>
     <string name="mode_video">Video</string>
+    <string name="mode_dual_photo">Dual Photo</string>
+    <string name="mode_dual_video">Dual Video</string>
     <string name="flash_off">Off</string>
     <string name="flash_auto">Auto</string>
     <string name="flash_on">On</string>
@@ -54,6 +56,7 @@
     <string name="error_save_failed">Couldn\'t save the photo</string>
     <string name="error_video_failed">Couldn\'t record video</string>
     <string name="error_video_stamp_failed">Couldn\'t stamp the video; original saved</string>
+    <string name="error_dual_capture_unavailable">Dual Capture is not available on this device</string>
     <string name="video_stamping_note">Saving stamped video</string>
     <string name="stamp_off_badge">Stamp off</string>
 

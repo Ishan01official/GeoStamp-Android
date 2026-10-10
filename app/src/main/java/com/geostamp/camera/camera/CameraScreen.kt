@@ -195,7 +195,7 @@ private fun CameraScreen(
         }
     }
 
-    val previewRatio = if (capture.mode == CaptureMode.VIDEO) {
+    val previewRatio = if (capture.mode.isVideoMode()) {
         PhotoAspectRatio.SIXTEEN_NINE.portraitWidthOverHeight
     } else {
         settings.camera.aspectRatio.portraitWidthOverHeight
@@ -213,7 +213,7 @@ private fun CameraScreen(
         ) {
             AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
             if (settings.camera.gridEnabled) GridOverlay()
-            liveStamp?.takeIf { capture.mode == CaptureMode.PHOTO }?.let { bitmap ->
+            liveStamp?.takeIf { capture.mode.isPhotoMode() }?.let { bitmap ->
                 Image(
                     bitmap = bitmap.asImageBitmap(),
                     contentDescription = null,
@@ -357,8 +357,8 @@ private fun BottomControls(
     ) {
         RecordingBadge(capture.recordingSeconds)
         when {
-            capture.mode == CaptureMode.VIDEO && capture.isProcessing -> CameraChip(stringResource(R.string.video_stamping_note))
-            capture.mode == CaptureMode.PHOTO && !stampEnabled ->
+            capture.mode.isVideoMode() && capture.isProcessing -> CameraChip(stringResource(R.string.video_stamping_note))
+            capture.mode.isPhotoMode() && !stampEnabled ->
                 CameraChip(stringResource(R.string.stamp_off_badge))
         }
         if (!simpleMode) {
@@ -367,8 +367,9 @@ private fun BottomControls(
         ModeSelector(
             mode = capture.mode,
             enabled = capture.recordingSeconds == null,
+            supportedModes = capture.supportedModes,
             onSelect = { mode ->
-                if (mode == CaptureMode.VIDEO) onVideoModeSelected()
+                if (mode.isVideoMode()) onVideoModeSelected()
                 viewModel.setMode(mode)
             }
         )

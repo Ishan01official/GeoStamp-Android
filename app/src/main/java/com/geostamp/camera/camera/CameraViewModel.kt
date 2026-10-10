@@ -63,6 +63,7 @@ data class CaptureUiState(
     val lens: LensFacing = LensFacing.BACK,
     val hasFrontCamera: Boolean = false,
     val hasFlashUnit: Boolean = false,
+    val supportedModes: Set<CaptureMode> = setOf(CaptureMode.PHOTO, CaptureMode.VIDEO),
     val countdown: Int? = null,
     val isProcessing: Boolean = false,
     val recordingSeconds: Long? = null,
@@ -165,10 +166,18 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
         session.onInitialized {
+            val cameraCapabilities = container.cameraCapabilityRepository.capabilities()
+            val supportedModes = buildSet {
+                add(CaptureMode.PHOTO)
+                add(CaptureMode.VIDEO)
+                if (cameraCapabilities.dualPhotoSupported) add(CaptureMode.DUAL_PHOTO)
+                if (cameraCapabilities.dualVideoSupported) add(CaptureMode.DUAL_VIDEO)
+            }
             _capture.update {
                 it.copy(
                     hasFrontCamera = session.hasLens(LensFacing.FRONT),
                     hasFlashUnit = session.hasFlashUnit(),
+                    supportedModes = supportedModes,
                     cameraReady = true
                 )
             }
@@ -205,6 +214,10 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
 
     fun setMode(mode: CaptureMode) {
         if (_capture.value.recordingSeconds != null || mode == _capture.value.mode) return
+        if (mode !in _capture.value.supportedModes) {
+            _events.trySend(CameraEvent.Failed(R.string.error_dual_capture_unavailable))
+            return
+        }
         cancelCountdown()
         _capture.update { it.copy(mode = mode) }
         applyCameraConfig()
@@ -228,7 +241,9 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     fun onShutter() {
         val state = _capture.value
         when {
-            state.mode == CaptureMode.VIDEO -> if (state.recordingSeconds == null) startRecording() else stopRecording()
+            state.mode == CaptureMode.DUAL_PHOTO || state.mode == CaptureMode.DUAL_VIDEO ->
+                _events.trySend(CameraEvent.Failed(R.string.error_dual_capture_unavailable))
+            state.mode.isVideoMode() -> if (state.recordingSeconds == null) startRecording() else stopRecording()
             state.countdown != null -> cancelCountdown()
             state.isProcessing -> Unit
             else -> startPhotoCapture()
