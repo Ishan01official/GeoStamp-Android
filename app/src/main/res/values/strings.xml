@@ -50,7 +50,8 @@
     <string name="error_capture_failed">Couldn\'t take the photo</string>
     <string name="error_save_failed">Couldn\'t save the photo</string>
     <string name="error_video_failed">Couldn\'t record video</string>
-    <string name="video_unstamped_note">Videos are saved without a stamp</string>
+    <string name="error_video_stamp_failed">Couldn\'t stamp the video; original saved</string>
+    <string name="video_stamping_note">Saving stamped video</string>
     <string name="stamp_off_badge">Stamp off</string>
 
     <!-- Diagnostics -->

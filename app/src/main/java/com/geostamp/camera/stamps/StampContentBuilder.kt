@@ -48,8 +48,7 @@ class StampContentBuilder(
 
     private fun coordinatesLine(data: StampData, fields: StampFields, preferences: StampPreferences): StampLine? {
         if (!fields.coordinates) return null
-        val location = data.location
-            ?: return StampLine(StampIcon.COORDINATES, labels.locationUnavailable)
+        val location = data.location ?: return null
         val text = CoordinateFormatter.format(location.latitude, location.longitude, preferences.coordinateFormat)
         return StampLine(StampIcon.COORDINATES, text, StampLine.Emphasis.PRIMARY)
     }

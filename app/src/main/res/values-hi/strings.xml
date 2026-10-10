@@ -48,7 +48,6 @@
     <string name="error_capture_failed">फ़ोटो नहीं ली जा सकी</string>
     <string name="error_save_failed">फ़ोटो सहेजी नहीं जा सकी</string>
     <string name="error_video_failed">वीडियो रिकॉर्ड नहीं हो सका</string>
-    <string name="video_unstamped_note">वीडियो बिना स्टैम्प के सहेजे जाते हैं</string>
     <string name="stamp_off_badge">स्टैम्प बंद</string>
 
     <string name="diag_camera">कैमरा</string>

@@ -353,8 +353,7 @@ private fun BottomControls(
     ) {
         RecordingBadge(capture.recordingSeconds)
         when {
-            capture.mode == CaptureMode.VIDEO && capture.recordingSeconds == null ->
-                CameraChip(stringResource(R.string.video_unstamped_note))
+            capture.mode == CaptureMode.VIDEO && capture.isProcessing -> CameraChip(stringResource(R.string.video_stamping_note))
             capture.mode == CaptureMode.PHOTO && !stampEnabled ->
                 CameraChip(stringResource(R.string.stamp_off_badge))
         }
@@ -419,5 +418,3 @@ private fun KeepPortrait() {
 
 private fun android.content.Context.hasPermission(permission: String): Boolean =
     ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
-
-

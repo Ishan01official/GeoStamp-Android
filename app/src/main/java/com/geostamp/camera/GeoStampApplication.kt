@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import com.geostamp.camera.capture.MediaStoreWriter
 import com.geostamp.camera.capture.PhotoProcessor
+import com.geostamp.camera.capture.VideoStampProcessor
 import com.geostamp.camera.environment.AddressResolver
 import com.geostamp.camera.environment.EnvironmentRepository
 import com.geostamp.camera.environment.MapTileRenderer
@@ -47,6 +48,12 @@ class AppContainer(context: Context) {
         mapTileRenderer = MapTileRenderer(appContext.cacheDir)
     )
     val photoProcessor = PhotoProcessor(
+        writer = mediaStoreWriter,
+        contentBuilder = { stampResources.contentBuilder() },
+        renderer = { stampResources.renderer() }
+    )
+    val videoStampProcessor = VideoStampProcessor(
+        context = appContext,
         writer = mediaStoreWriter,
         contentBuilder = { stampResources.contentBuilder() },
         renderer = { stampResources.renderer() }

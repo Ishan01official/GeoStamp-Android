@@ -5,6 +5,7 @@ import android.content.ContentValues
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Environment
+import android.os.ParcelFileDescriptor
 import android.provider.MediaStore
 import androidx.exifinterface.media.ExifInterface
 import com.geostamp.camera.location.LocationStamp
@@ -34,6 +35,29 @@ class MediaStoreWriter(private val resolver: ContentResolver) {
     fun saveJpegBytes(bytes: ByteArray, displayName: String, metadata: PhotoMetadata): Uri =
         insertPending(displayName, metadata.capturedAtMillis) { it.write(bytes) }
             .also { uri -> writeExif(uri, metadata, resetOrientation = false) }
+
+    fun createPendingVideo(displayName: String, takenAtMillis: Long): Uri {
+        val values = ContentValues().apply {
+            put(MediaStore.Video.Media.DISPLAY_NAME, displayName)
+            put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
+            put(MediaStore.Video.Media.RELATIVE_PATH, VIDEO_RELATIVE_PATH)
+            put(MediaStore.Video.Media.DATE_TAKEN, takenAtMillis)
+            put(MediaStore.Video.Media.IS_PENDING, 1)
+        }
+        return resolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values)
+            ?: error("MediaStore refused to create $displayName")
+    }
+
+    fun publishVideo(uri: Uri) {
+        resolver.update(uri, ContentValues().apply { put(MediaStore.Video.Media.IS_PENDING, 0) }, null, null)
+    }
+
+    fun delete(uri: Uri) {
+        resolver.delete(uri, null, null)
+    }
+
+    fun openFileDescriptor(uri: Uri, mode: String): ParcelFileDescriptor =
+        resolver.openFileDescriptor(uri, mode) ?: error("Could not open $uri")
 
     private fun insertPending(displayName: String, takenAtMillis: Long, write: (OutputStream) -> Unit): Uri {
         val values = ContentValues().apply {
@@ -98,6 +122,9 @@ class MediaStoreWriter(private val resolver: ContentResolver) {
 
         fun displayName(prefix: String, takenAtMillis: Long, suffix: String = ""): String =
             "${prefix}_${SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US).format(Date(takenAtMillis))}$suffix.jpg"
+
+        fun videoDisplayName(prefix: String, takenAtMillis: Long, suffix: String = ""): String =
+            "${prefix}_${SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US).format(Date(takenAtMillis))}$suffix.mp4"
 
         fun exifOrientation(rotationDegrees: Int): Int =
             when (((rotationDegrees % 360) + 360) % 360) {

@@ -54,7 +54,7 @@ class StampContentBuilderTest {
     fun mapNeverShownWithoutLocation() {
         val content = builder.build(StampData(0L), StampPreferences(template = StampTemplate.MAP_CARD), mapAvailable = true)
         assertFalse(content.showMap)
-        assertEquals("Location unavailable", content.details.single().text)
+        assertTrue(content.details.isEmpty())
     }
 
     @Test
