@@ -312,4 +312,13 @@
     <string name="cd_recording_status">रिकॉर्डिंग चल रही है, %2$d में से %1$d सेकंड</string>
     <string name="rec_seconds_left">%1$d सेकंड बाकी</string>
     <string name="rec_no_audio">आवाज़ नहीं: माइक्रोफ़ोन की अनुमति नहीं</string>
+    <string name="player_pause">रोकें</string>
+    <string name="player_back_10">10 सेकंड पीछे</string>
+    <string name="player_forward_10">10 सेकंड आगे</string>
+    <string name="player_position">%1$s / %2$s</string>
+    <string name="player_mute">आवाज़ बंद करें</string>
+    <string name="player_unmute">आवाज़ चालू करें</string>
+    <string name="player_fullscreen">पूरी स्क्रीन</string>
+    <string name="player_exit_fullscreen">पूरी स्क्रीन से बाहर</string>
+    <string name="info_duration">अवधि</string>
 </resources>

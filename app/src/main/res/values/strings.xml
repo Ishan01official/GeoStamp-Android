@@ -322,4 +322,13 @@
     <string name="cd_recording_status">Recording, %1$d of %2$d seconds</string>
     <string name="rec_seconds_left">%1$d s left</string>
     <string name="rec_no_audio">No sound: microphone not allowed</string>
+    <string name="player_pause">Pause</string>
+    <string name="player_back_10">Back 10 seconds</string>
+    <string name="player_forward_10">Forward 10 seconds</string>
+    <string name="player_position">%1$s / %2$s</string>
+    <string name="player_mute">Mute</string>
+    <string name="player_unmute">Turn sound on</string>
+    <string name="player_fullscreen">Full screen</string>
+    <string name="player_exit_fullscreen">Exit full screen</string>
+    <string name="info_duration">Length</string>
 </resources>

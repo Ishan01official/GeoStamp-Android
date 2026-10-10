@@ -1,6 +1,8 @@
 package com.geostamp.camera.gallery
 
+import android.app.Activity
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.net.Uri
 import android.text.format.DateFormat
 import android.text.format.Formatter
@@ -24,7 +26,6 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.EditLocationAlt
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Map
-import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,6 +35,13 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import com.geostamp.camera.gallery.player.VideoPlayer
+import com.geostamp.camera.gallery.player.formatTime
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -81,8 +89,10 @@ fun MediaViewerScreen(
     var bitmap by remember(uri) { mutableStateOf<android.graphics.Bitmap?>(null) }
     var metadata by remember(uri) { mutableStateOf<PhotoMetadataInfo?>(null) }
     LaunchedEffect(uri, item?.isVideo) {
-        bitmap = if (item?.isVideo == true) viewModel.thumbnail(uri) else viewModel.displayBitmap(uri, maxEdge)
+        if (item?.isVideo == false) bitmap = viewModel.displayBitmap(uri, maxEdge)
     }
+    var fullscreen by rememberSaveable(uri) { mutableStateOf(false) }
+    FullscreenEffect(enabled = fullscreen, landscapeVideo = item?.let { it.isVideo && it.width > it.height } == true)
     LaunchedEffect(uri) { metadata = viewModel.metadata(uri) }
     var showInfo by remember { mutableStateOf(false) }
     var editAddress by remember { mutableStateOf(false) }
@@ -103,7 +113,17 @@ fun MediaViewerScreen(
     LaunchedEffect(Unit) { if (state.items.isEmpty()) viewModel.refresh() }
 
     Box(Modifier.fillMaxSize().background(CameraColors.Background)) {
-        bitmap?.let {
+        if (item?.isVideo == true) {
+            VideoPlayer(
+                uri = uri,
+                fullscreen = fullscreen,
+                onToggleFullscreen = { fullscreen = !fullscreen },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(if (fullscreen) Modifier else Modifier.statusBarsPadding().padding(top = 56.dp, bottom = 72.dp).navigationBarsPadding())
+            )
+        }
+        bitmap?.takeIf { item?.isVideo == false }?.let {
             Image(
                 bitmap = it.asImageBitmap(),
                 contentDescription = item?.displayName,
@@ -130,18 +150,7 @@ fun MediaViewerScreen(
                     }
             )
         }
-        if (item?.isVideo == true) {
-            IconButton(
-                onClick = {
-                    context.startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(uri, "video/*").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
-                },
-                modifier = Modifier.align(Alignment.Center).size(88.dp)
-            ) {
-                Icon(Icons.Outlined.PlayCircle, contentDescription = stringResource(R.string.action_play), tint = Color.White, modifier = Modifier.size(72.dp))
-            }
-        }
-
-        Row(
+        if (!fullscreen) Row(
             Modifier.statusBarsPadding().fillMaxWidth().padding(Dimens.SpaceXs),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -150,7 +159,7 @@ fun MediaViewerScreen(
             }
         }
 
-        Row(
+        if (!fullscreen) Row(
             Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
@@ -192,11 +201,12 @@ fun MediaViewerScreen(
                 )
                 if (item.width > 0) InfoRow(stringResource(R.string.info_resolution), "${item.width} × ${item.height}")
                 InfoRow(stringResource(R.string.info_size), Formatter.formatShortFileSize(context, item.sizeBytes))
+                if (item.isVideo && item.durationMillis > 0) InfoRow(stringResource(R.string.info_duration), formatTime(item.durationMillis))
+                InfoRow(
+                    stringResource(R.string.info_stamp),
+                    stringResource(if (item.isStamped) R.string.info_stamped_yes else R.string.info_stamped_no)
+                )
                 if (!item.isVideo) {
-                    InfoRow(
-                        stringResource(R.string.info_stamp),
-                        stringResource(if (item.isStamped) R.string.info_stamped_yes else R.string.info_stamped_no)
-                    )
                     InfoRow(
                         stringResource(R.string.info_location),
                         metadata?.latitude?.let { String.format(Locale.US, "%.6f, %.6f", it, metadata?.longitude) } ?: notRecorded
@@ -255,6 +265,24 @@ fun MediaViewerScreen(
             },
             dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(stringResource(R.string.cancel)) } }
         )
+    }
+}
+
+/** Full screen hides the system bars; a landscape video also turns the screen to landscape. */
+@Composable
+private fun FullscreenEffect(enabled: Boolean, landscapeVideo: Boolean) {
+    val activity = LocalContext.current as? Activity ?: return
+    DisposableEffect(enabled, landscapeVideo) {
+        val controller = WindowCompat.getInsetsController(activity.window, activity.window.decorView)
+        if (enabled) {
+            controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            controller.hide(WindowInsetsCompat.Type.systemBars())
+            if (landscapeVideo) activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        }
+        onDispose {
+            controller.show(WindowInsetsCompat.Type.systemBars())
+            activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
     }
 }
 
