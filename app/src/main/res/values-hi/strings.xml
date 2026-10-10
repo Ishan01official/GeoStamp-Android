@@ -66,7 +66,7 @@
     <string name="ctl_simple_mode_summary">बड़े आवश्यक नियंत्रण दिखाता है और उन्नत कैमरा विकल्प सेटिंग्स में रखता है।</string>
     <string name="ctl_zoom">ज़ूम</string>
     <string name="ctl_stamp_template">स्टैम्प टेम्पलेट</string>
-    <string name="ctl_customize_stamp">स्टैम्प बदलें</string>
+    <string name="ctl_customize_stamp">स्टैम्प सेटिंग</string>
     <string name="ctl_live_stamp">लाइव स्टैम्प प्रीव्यू</string>
     <string name="ctl_live_stamp_summary">व्यूफ़ाइंडर पर स्टैम्प वैसा ही दिखाएँ जैसा सहेजा जाएगा</string>
     <string name="ctl_stamp_enabled">फ़ोटो पर स्टैम्प लगाएँ</string>
@@ -75,7 +75,7 @@
     <string name="template_map_card">मैप कार्ड</string>
     <string name="template_professional">प्रोफ़ेशनल</string>
 
-    <string name="stamp_settings_title">फ़ोटो स्टैम्प</string>
+    <string name="stamp_settings_title">स्टैम्प सेटिंग</string>
     <string name="stamp_preview_sample_note">जहाँ लाइव डेटा अभी उपलब्ध नहीं है, वहाँ प्रीव्यू नमूना मान दिखाता है। सहेजी गई फ़ोटो में केवल वास्तविक डेटा होता है।</string>
     <string name="section_template">टेम्पलेट</string>
     <string name="section_fields">जानकारी</string>
@@ -125,14 +125,14 @@
     <string name="settings_title">सेटिंग्स</string>
     <string name="section_camera">कैमरा</string>
     <string name="section_location">GPS और लोकेशन</string>
-    <string name="section_stamps">फ़ोटो स्टैम्प</string>
+    <string name="section_stamps">फ़ोटो और वीडियो पर स्टैम्प</string>
     <string name="section_maps">नक्शे</string>
     <string name="section_weather">मौसम</string>
     <string name="section_storage">स्टोरेज और गैलरी</string>
     <string name="section_appearance">रूप</string>
     <string name="section_privacy">गोपनीयता</string>
     <string name="section_about">परिचय</string>
-    <string name="setting_stamp_open">स्टैम्प डिज़ाइन</string>
+    <string name="setting_stamp_open">स्टैम्प सेटिंग</string>
     <string name="setting_stamp_open_summary">टेम्पलेट, जानकारी, टेक्स्ट और लोगो</string>
     <string name="setting_max_accuracy">आवश्यक GPS सटीकता</string>
     <string name="setting_max_accuracy_summary">±%d मी से कम सटीक फ़िक्स स्टैम्प पर नहीं लगते</string>

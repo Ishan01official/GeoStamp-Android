@@ -20,6 +20,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -302,11 +303,16 @@ private fun CameraScreen(
         else -> settings.camera.aspectRatio.portraitWidthOverHeight
     }
 
-    Box(Modifier.fillMaxSize().background(CameraColors.Background)) {
+    BoxWithConstraints(Modifier.fillMaxSize().background(CameraColors.Background)) {
+        // On tall phones the status chips get their own row above the picture instead of covering it,
+        // which also moves the preview closer to the controls.
+        val viewfinderHeight = maxWidth / previewRatio
+        val stacked = maxHeight - viewfinderHeight >= TOP_BAR_HEIGHT + MIN_CONTROLS_HEIGHT
         // Viewfinder: exact capture framing, never stretched.
         Box(
             Modifier
                 .statusBarsPadding()
+                .padding(top = if (stacked) TOP_BAR_HEIGHT else 0.dp)
                 .fillMaxWidth()
                 .aspectRatio(previewRatio)
                 .align(Alignment.TopCenter)
@@ -377,7 +383,7 @@ private fun CameraScreen(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .statusBarsPadding()
-                .padding(top = 64.dp, end = Dimens.SpaceM)
+                .padding(top = if (stacked) TOP_BAR_HEIGHT + Dimens.SpaceM else 64.dp, end = Dimens.SpaceM)
         )
 
         BottomControls(
@@ -514,6 +520,9 @@ private fun BottomControls(
         )
     }
 }
+
+private val TOP_BAR_HEIGHT = 56.dp
+private val MIN_CONTROLS_HEIGHT = 300.dp
 
 /** The camera UI stays portrait like native camera apps; icons rotate instead and CameraX orients the photo. */
 @SuppressLint("SourceLockedOrientationActivity")

@@ -105,11 +105,6 @@ fun SideControls(
                 description = stringResource(R.string.cd_aspect, stringResource(camera.aspectRatio.labelRes)),
                 rotation = iconRotation
             ) { onCameraChange { it.copy(aspectRatio = it.aspectRatio.next()) } }
-            SideTextButton(
-                text = stringResource(camera.resolution.labelRes),
-                description = stringResource(R.string.cd_resolution, stringResource(camera.resolution.labelRes)),
-                rotation = iconRotation
-            ) { onCameraChange { it.copy(resolution = it.resolution.next()) } }
             SideButton(
                 icon = when (camera.timer) {
                     CaptureTimer.OFF -> Icons.Outlined.TimerOff

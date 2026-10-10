@@ -78,7 +78,8 @@ class GalleryRepository(private val resolver: ContentResolver) {
     suspend fun thumbnail(uri: Uri, size: Int = THUMBNAIL_SIZE): Bitmap? {
         thumbnails.get(uri)?.let { return it }
         return withContext(Dispatchers.IO) {
-            runCatching { resolver.loadThumbnail(uri, Size(size, size), null) }.getOrNull()
+            // Bounds are portrait 3:4; the platform keeps the image's own aspect ratio inside them.
+            runCatching { resolver.loadThumbnail(uri, Size(size * 3 / 4, size), null) }.getOrNull()
                 ?.also { thumbnails.put(uri, it) }
         }
     }
@@ -185,7 +186,7 @@ class GalleryRepository(private val resolver: ContentResolver) {
     }
 
     private companion object {
-        const val THUMBNAIL_SIZE = 320
+        const val THUMBNAIL_SIZE = 480
         const val THUMBNAIL_CACHE_BYTES = 24 * 1024 * 1024
     }
 }
