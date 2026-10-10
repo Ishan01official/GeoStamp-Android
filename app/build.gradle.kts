@@ -6,14 +6,14 @@ plugins {
 
 android {
     namespace = "com.geostamp.camera"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.geostamp.camera"
         minSdk = 29
-        targetSdk = 35
-        versionCode = 3
-        versionName = "0.3.0"
+        targetSdk = 36
+        versionCode = 4
+        versionName = "0.4.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
