@@ -52,6 +52,17 @@ class SettingsRepositoryTest {
     }
 
     @Test
+    fun simpleCameraModeDefaultsOffAndPersistsWhenEnabled() = runTest {
+        val repository = repository("simple-mode.preferences_pb")
+
+        assertEquals(false, repository.settings.first().camera.simpleMode)
+
+        repository.update { it.copy(camera = it.camera.copy(simpleMode = true)) }
+
+        assertEquals(true, repository.settings.first().camera.simpleMode)
+    }
+
+    @Test
     fun existingStoredTemplateIsNotMigratedToProfessional() = runTest {
         val file = File(temporaryFolder.root, "existing-template.preferences_pb")
         val dataStore = dataStore(file)

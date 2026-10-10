@@ -59,6 +59,7 @@ fun TopOverlay(
     location: LocationUpdate?,
     compass: CompassUpdate?,
     maxAccuracyMeters: Int,
+    simpleMode: Boolean,
     iconRotation: Float,
     diagnosticsOpen: Boolean,
     onToggleDiagnostics: () -> Unit,
@@ -66,8 +67,8 @@ fun TopOverlay(
     modifier: Modifier = Modifier
 ) {
     Box(modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS)) {
-        GpsChip(location, maxAccuracyMeters, Modifier.align(Alignment.CenterStart))
-        CompassChip(compass, Modifier.align(Alignment.Center))
+        GpsChip(location, maxAccuracyMeters, simpleMode, Modifier.align(Alignment.CenterStart))
+        if (!simpleMode) CompassChip(compass, Modifier.align(Alignment.Center))
         Row(Modifier.align(Alignment.CenterEnd), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
             CameraIconButton(
                 icon = Icons.Outlined.Info,
@@ -89,22 +90,38 @@ fun TopOverlay(
 }
 
 @Composable
-private fun GpsChip(location: LocationUpdate?, maxAccuracyMeters: Int, modifier: Modifier) {
+private fun GpsChip(location: LocationUpdate?, maxAccuracyMeters: Int, simpleMode: Boolean, modifier: Modifier) {
     val (icon, text, tint) = when (location) {
         is LocationUpdate.Available -> {
             val accuracy = location.location.accuracyMeters.roundToInt()
             val good = location.location.isAccurateEnough(maxAccuracyMeters.toFloat())
             Triple(
                 if (good) Icons.Outlined.GpsFixed else Icons.Outlined.GpsNotFixed,
-                stringResource(R.string.gps_accuracy, accuracy),
+                if (simpleMode) {
+                    stringResource(if (good) R.string.gps_ready else R.string.gps_improving)
+                } else {
+                    stringResource(R.string.gps_accuracy, accuracy)
+                },
                 if (good) CameraColors.Content else CameraColors.Warning
             )
         }
-        is LocationUpdate.StaleLastKnown -> Triple(Icons.Outlined.GpsNotFixed, stringResource(R.string.gps_stale), CameraColors.Warning)
-        LocationUpdate.PermissionDenied -> Triple(Icons.Outlined.GpsOff, stringResource(R.string.gps_denied), CameraColors.ContentMuted)
+        is LocationUpdate.StaleLastKnown -> Triple(
+            Icons.Outlined.GpsNotFixed,
+            stringResource(if (simpleMode) R.string.gps_improving else R.string.gps_stale),
+            CameraColors.Warning
+        )
+        LocationUpdate.PermissionDenied -> Triple(
+            Icons.Outlined.GpsOff,
+            stringResource(if (simpleMode) R.string.gps_unavailable else R.string.gps_denied),
+            CameraColors.ContentMuted
+        )
         is LocationUpdate.ProvidersDisabled, is LocationUpdate.ProviderUnavailable ->
-            Triple(Icons.Outlined.GpsOff, stringResource(R.string.gps_off), CameraColors.ContentMuted)
-        is LocationUpdate.Waiting, null -> Triple(Icons.Outlined.GpsNotFixed, stringResource(R.string.gps_searching), CameraColors.ContentMuted)
+            Triple(Icons.Outlined.GpsOff, stringResource(if (simpleMode) R.string.gps_unavailable else R.string.gps_off), CameraColors.ContentMuted)
+        is LocationUpdate.Waiting, null -> Triple(
+            Icons.Outlined.GpsNotFixed,
+            stringResource(if (simpleMode) R.string.gps_improving else R.string.gps_searching),
+            CameraColors.ContentMuted
+        )
     }
     CameraChip(text = text, icon = icon, iconTint = tint, modifier = modifier)
 }

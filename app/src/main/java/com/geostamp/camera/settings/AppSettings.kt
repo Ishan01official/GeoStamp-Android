@@ -29,7 +29,8 @@ data class CameraSettings(
     val resolution: PhotoResolution = PhotoResolution.DEFAULT,
     val gridEnabled: Boolean = false,
     val liveStampPreview: Boolean = true,
-    val tapToFocus: Boolean = true
+    val tapToFocus: Boolean = true,
+    val simpleMode: Boolean = false
 )
 
 data class LocationSettings(

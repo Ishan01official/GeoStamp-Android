@@ -250,6 +250,7 @@ private fun CameraScreen(
                 location = location,
                 compass = compass,
                 maxAccuracyMeters = settings.location.maxAccuracyMeters,
+                simpleMode = settings.camera.simpleMode,
                 iconRotation = iconRotation,
                 diagnosticsOpen = showDiagnostics,
                 onToggleDiagnostics = { showDiagnostics = !showDiagnostics },
@@ -275,6 +276,7 @@ private fun CameraScreen(
             camera = settings.camera,
             mode = capture.mode,
             hasFlashUnit = capture.hasFlashUnit,
+            simpleMode = settings.camera.simpleMode,
             iconRotation = iconRotation,
             onCameraChange = viewModel::updateCameraSettings,
             onOpenSheet = { showSheet = true },
@@ -290,6 +292,7 @@ private fun CameraScreen(
             zoomPresets = zoomState?.let { ZoomPresets.forRange(it.minZoomRatio, it.maxZoomRatio) }.orEmpty(),
             zoomRatio = zoomState?.zoomRatio ?: 1f,
             stampEnabled = settings.stamp.enabled,
+            simpleMode = settings.camera.simpleMode,
             iconRotation = iconRotation,
             onOpenGallery = onOpenGallery,
             onVideoModeSelected = onVideoModeSelected,
@@ -337,6 +340,7 @@ private fun BottomControls(
     zoomPresets: List<Float>,
     zoomRatio: Float,
     stampEnabled: Boolean,
+    simpleMode: Boolean,
     iconRotation: Float,
     onOpenGallery: () -> Unit,
     onVideoModeSelected: () -> Unit,
@@ -357,7 +361,9 @@ private fun BottomControls(
             capture.mode == CaptureMode.PHOTO && !stampEnabled ->
                 CameraChip(stringResource(R.string.stamp_off_badge))
         }
-        ZoomSelector(presets = zoomPresets, current = zoomRatio, onSelect = viewModel::setZoom)
+        if (!simpleMode) {
+            ZoomSelector(presets = zoomPresets, current = zoomRatio, onSelect = viewModel::setZoom)
+        }
         ModeSelector(
             mode = capture.mode,
             enabled = capture.recordingSeconds == null,

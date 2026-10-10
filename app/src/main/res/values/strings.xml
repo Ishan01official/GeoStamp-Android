@@ -38,6 +38,9 @@
     <string name="gps_denied">Location off</string>
     <string name="gps_accuracy">±%d m</string>
     <string name="gps_stale">Stale fix</string>
+    <string name="gps_ready">Location ready</string>
+    <string name="gps_improving">Improving GPS accuracy</string>
+    <string name="gps_unavailable">Location unavailable</string>
     <string name="compass_unavailable">No compass</string>
     <string name="compass_calibrate">Calibrate</string>
     <string name="permission_camera_title">Camera access needed</string>
@@ -74,6 +77,8 @@
     <string name="ctl_timer">Timer</string>
     <string name="ctl_focus">Tap to focus</string>
     <string name="ctl_focus_summary">Tap the preview to focus and meter. Resets after 3 seconds.</string>
+    <string name="ctl_simple_mode">Simple Camera Mode</string>
+    <string name="ctl_simple_mode_summary">Shows larger essential controls and moves advanced camera options into Settings.</string>
     <string name="ctl_zoom">Zoom</string>
     <string name="ctl_stamp_template">Stamp template</string>
     <string name="ctl_customize_stamp">Customize stamp</string>

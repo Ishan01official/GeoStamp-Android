@@ -67,6 +67,7 @@ fun SideControls(
     camera: CameraSettings,
     mode: CaptureMode,
     hasFlashUnit: Boolean,
+    simpleMode: Boolean,
     iconRotation: Float,
     onCameraChange: ((CameraSettings) -> CameraSettings) -> Unit,
     onOpenSheet: () -> Unit,
@@ -92,7 +93,7 @@ fun SideControls(
             rotation = iconRotation
         ) { onCameraChange { it.copy(flashMode = it.flashMode.next()) } }
 
-        if (mode == CaptureMode.PHOTO) {
+        if (mode == CaptureMode.PHOTO && !simpleMode) {
             SideTextButton(
                 text = stringResource(camera.aspectRatio.labelRes),
                 description = stringResource(R.string.cd_aspect, stringResource(camera.aspectRatio.labelRes)),
@@ -114,12 +115,14 @@ fun SideControls(
                 active = camera.timer != CaptureTimer.OFF
             ) { onCameraChange { it.copy(timer = it.timer.next()) } }
         }
-        SideButton(
-            icon = if (camera.gridEnabled) Icons.Outlined.Grid3x3 else Icons.Outlined.GridOff,
-            description = stringResource(if (camera.gridEnabled) R.string.cd_grid_on else R.string.cd_grid_off),
-            rotation = iconRotation,
-            active = camera.gridEnabled
-        ) { onCameraChange { it.copy(gridEnabled = !it.gridEnabled) } }
+        if (!simpleMode) {
+            SideButton(
+                icon = if (camera.gridEnabled) Icons.Outlined.Grid3x3 else Icons.Outlined.GridOff,
+                description = stringResource(if (camera.gridEnabled) R.string.cd_grid_on else R.string.cd_grid_off),
+                rotation = iconRotation,
+                active = camera.gridEnabled
+            ) { onCameraChange { it.copy(gridEnabled = !it.gridEnabled) } }
+        }
         SideButton(
             icon = Icons.Outlined.Tune,
             description = stringResource(R.string.cd_more_controls),

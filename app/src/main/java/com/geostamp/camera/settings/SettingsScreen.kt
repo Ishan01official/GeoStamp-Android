@@ -105,6 +105,13 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onOpenStamp
                         icon = Icons.Outlined.CenterFocusStrong
                     )
                     SwitchRow(
+                        title = stringResource(R.string.ctl_simple_mode),
+                        summary = stringResource(R.string.ctl_simple_mode_summary),
+                        checked = settings.camera.simpleMode,
+                        onCheckedChange = { v -> update { it.copy(camera = it.camera.copy(simpleMode = v)) } },
+                        icon = Icons.Outlined.Visibility
+                    )
+                    SwitchRow(
                         title = stringResource(R.string.ctl_live_stamp),
                         summary = stringResource(R.string.ctl_live_stamp_summary),
                         checked = settings.camera.liveStampPreview,

@@ -56,6 +56,7 @@ private object Keys {
     val grid = booleanPreferencesKey("camera.grid")
     val liveStamp = booleanPreferencesKey("camera.live_stamp")
     val tapToFocus = booleanPreferencesKey("camera.tap_to_focus")
+    val simpleMode = booleanPreferencesKey("camera.simple_mode")
 
     val maxAccuracy = intPreferencesKey("location.max_accuracy")
     val maxAge = intPreferencesKey("location.max_age")
@@ -104,7 +105,8 @@ private fun Preferences.toAppSettings(): AppSettings {
             resolution = enumOf(Keys.resolution, PhotoResolution.DEFAULT),
             gridEnabled = this[Keys.grid] ?: defaults.camera.gridEnabled,
             liveStampPreview = this[Keys.liveStamp] ?: defaults.camera.liveStampPreview,
-            tapToFocus = this[Keys.tapToFocus] ?: defaults.camera.tapToFocus
+            tapToFocus = this[Keys.tapToFocus] ?: defaults.camera.tapToFocus,
+            simpleMode = this[Keys.simpleMode] ?: defaults.camera.simpleMode
         ),
         location = LocationSettings(
             maxAccuracyMeters = this[Keys.maxAccuracy] ?: defaults.location.maxAccuracyMeters,
@@ -175,6 +177,7 @@ private fun MutablePreferences.write(settings: AppSettings) {
         this@write[Keys.grid] = gridEnabled
         this@write[Keys.liveStamp] = liveStampPreview
         this@write[Keys.tapToFocus] = tapToFocus
+        this@write[Keys.simpleMode] = simpleMode
     }
 
     this[Keys.maxAccuracy] = settings.location.maxAccuracyMeters
