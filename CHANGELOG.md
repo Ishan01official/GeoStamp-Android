@@ -3,8 +3,14 @@
 This file describes source changes. Version names match `app/build.gradle.kts`;
 entries do not imply that a signed release was published.
 
-## Unreleased
+## 0.4.0 — 2026-10-10
 
+- Add a Map type setting (Normal, Satellite, Terrain, Hybrid) for stamp thumbnails, with keyless providers, per-provider caches and a fallback to Normal and then to the coordinate panel.
+- Add the QR Location template, a QR field for every template and a Show location QR sheet with Open in Maps and Share QR.
+- Open locations in Google Maps by default, falling back to any `geo:` handler and then the browser.
+- Replace the About source-code link with a native, offline Privacy Policy screen.
+- Translate the app into Spanish, French, German, Portuguese, Japanese, Korean, Simplified Chinese and Arabic, and register them for per-app language settings.
+- Normalize international addresses: country codes, scripts written without spaces, and no "null", "Unknown" or "Unnamed Road" values.
 - Preserve full provider address lines and components instead of reducing them to locality.
 - Add Detailed (default), Standard and Short address formatting across capture and gallery paths.
 - Cache address components, accept compatible enrichment and stabilize conflicting nearby results.

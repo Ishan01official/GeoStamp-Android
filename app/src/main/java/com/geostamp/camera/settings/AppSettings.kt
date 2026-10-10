@@ -5,6 +5,7 @@ import com.geostamp.camera.environment.AddressDetail
 import com.geostamp.camera.capture.FlashMode
 import com.geostamp.camera.capture.PhotoAspectRatio
 import com.geostamp.camera.capture.PhotoResolution
+import com.geostamp.camera.maps.MapType
 import com.geostamp.camera.stamps.StampPreferences
 
 data class AppSettings(
@@ -72,12 +73,21 @@ data class OnlineServices(
     val addressLookup: Boolean = true,
     val mapTiles: Boolean = true,
     val weather: Boolean = false,
-    val mapLinkProvider: MapLinkProvider = MapLinkProvider.OPEN_STREET_MAP
+    /** Which app opens a location. Only a default: a choice stored by an earlier version is kept. */
+    val mapLinkProvider: MapLinkProvider = MapLinkProvider.DEFAULT,
+    val mapType: MapType = MapType.DEFAULT
 ) {
     val anyEnabled: Boolean get() = addressLookup || mapTiles || weather
 }
 
-enum class MapLinkProvider { OPEN_STREET_MAP, GOOGLE_MAPS }
+enum class MapLinkProvider {
+    OPEN_STREET_MAP,
+    GOOGLE_MAPS;
+
+    companion object {
+        val DEFAULT = GOOGLE_MAPS
+    }
+}
 
 data class StorageSettings(
     val saveOriginal: Boolean = false,

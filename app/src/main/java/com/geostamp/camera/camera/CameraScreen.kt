@@ -70,6 +70,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.geostamp.camera.location.LocationUpdate
 import com.geostamp.camera.permissions.LocationAccess
+import com.geostamp.camera.qr.LocationQrSheet
 import com.geostamp.camera.permissions.PermissionPolicy
 import com.geostamp.camera.video.VideoJobState
 import com.geostamp.camera.video.VideoLimits
@@ -118,6 +119,7 @@ fun CameraRoute(
     val onboarding = settings.onboarding
     var permissions by remember { mutableStateOf(context.permissionSnapshot()) }
     var showLocationHelp by rememberSaveable { mutableStateOf(false) }
+    var showLocationQr by rememberSaveable { mutableStateOf(false) }
 
     // Re-read after returning from app settings, where the user may have changed access.
     LifecycleResumeEffect(Unit) {
@@ -175,7 +177,11 @@ fun CameraRoute(
         onOpenSettings = onOpenSettings,
         onOpenStampSettings = onOpenStampSettings,
         onOpenMedia = onOpenMedia,
-        onLocationChipClick = { showLocationHelp = true },
+        onLocationChipClick = {
+            // A precise fix has nothing to fix, so the chip offers the location QR; otherwise it explains what is wrong.
+            val ready = permissions.locationAccess == LocationAccess.PRECISE && viewModel.location.value is LocationUpdate.Available
+            if (ready) showLocationQr = true else showLocationHelp = true
+        },
         onVideoModeSelected = {
             if (!context.hasPermission(Manifest.permission.RECORD_AUDIO)) audioLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
@@ -186,6 +192,24 @@ fun CameraRoute(
             onAllow = ::requestLocation,
             onNotNow = { viewModel.updateSettings { it.copy(onboarding = it.onboarding.copy(locationPromptShown = true)) } }
         )
+    }
+
+    if (showLocationQr) {
+        val location by viewModel.location.collectAsStateWithLifecycle()
+        val address by viewModel.detectedAddress.collectAsStateWithLifecycle()
+        // Freeze the coordinates while the sheet is open so the code does not change under a scanner.
+        val fix = remember { (location as? LocationUpdate.Available)?.location }
+        if (fix == null) {
+            showLocationQr = false
+        } else {
+            LocationQrSheet(
+                latitude = fix.latitude,
+                longitude = fix.longitude,
+                address = address,
+                mapLinkProvider = settings.services.mapLinkProvider,
+                onDismiss = { showLocationQr = false }
+            )
+        }
     }
 
     if (showLocationHelp) {

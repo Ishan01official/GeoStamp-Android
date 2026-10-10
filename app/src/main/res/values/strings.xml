@@ -74,6 +74,7 @@
     <string name="template_classic">Classic</string>
     <string name="template_map_card">Map card</string>
     <string name="template_professional">Professional</string>
+    <string name="template_qr_location">QR Location</string>
 
     <!-- Stamp settings -->
     <string name="stamp_settings_title">Stamp settings</string>
@@ -94,6 +95,7 @@
     <string name="field_map">Mini map</string>
     <string name="field_custom_text">Custom text</string>
     <string name="field_logo">Logo</string>
+    <string name="field_qr_code">Location QR code</string>
     <string name="field_needs_address">Turn on address lookup in Settings</string>
     <string name="field_needs_map">Turn on map thumbnails in Settings</string>
     <string name="field_needs_weather">Turn on weather in Settings</string>
@@ -151,7 +153,7 @@
     <string name="setting_address">Address lookup</string>
     <string name="setting_address_summary">Sends coordinates to your phone\'s geocoding provider. On by default; you can turn it off.</string>
     <string name="setting_map_tiles">Map thumbnails</string>
-    <string name="setting_map_tiles_summary">Downloads OpenStreetMap tiles for the stamp\'s mini map. On by default; you can turn it off.</string>
+    <string name="setting_map_tiles_summary">Downloads map tiles for the stamp\'s mini map. On by default; you can turn it off.</string>
     <string name="setting_map_link">Open locations in</string>
     <string name="map_osm">OpenStreetMap</string>
     <string name="map_google">Google Maps</string>
@@ -177,7 +179,6 @@
     <string name="setting_permissions_summary">Camera, location and microphone access</string>
     <string name="privacy_summary">No ads, trackers or accounts. Photos stay on your device unless you share them.</string>
     <string name="about_version">Version</string>
-    <string name="about_source">Source code</string>
     <string name="about_privacy">Privacy policy</string>
 
     <!-- Gallery -->
@@ -223,7 +224,6 @@
     <string name="stamp_altitude_format">Alt %s m</string>
     <string name="stamp_speed_format">%s km/h</string>
     <string name="stamp_weather_source_format">Open-Meteo %s</string>
-    <string name="map_attribution" translatable="false">© OpenStreetMap</string>
     <string name="weather_clear">Clear</string>
     <string name="weather_partly_cloudy">Partly cloudy</string>
     <string name="weather_cloudy">Cloudy</string>
@@ -266,7 +266,7 @@
     <string name="location_help_searching_title">Finding your location</string>
     <string name="location_help_searching_body">GPS works best outdoors or near a window. Until a fix is ready, photos are saved without coordinates. Coordinates are never guessed.</string>
     <string name="gps_approximate">Approximate</string>
-    <string name="cd_location_status">Location status: %1$s. Double tap for help.</string>
+    <string name="cd_location_status">Location status: %1$s. Double tap for details.</string>
     <string name="address_none_detected">No address detected</string>
     <string name="cd_edit_address">Address on stamp: %1$s. Double tap to edit.</string>
     <string name="address_edited_badge">Edited</string>
@@ -336,4 +336,56 @@
         <item quantity="one">Recording, %1$d of %2$d second</item>
         <item quantity="other">Recording, %1$d of %2$d seconds</item>
     </plurals>
+
+    <!-- Map types -->
+    <string name="setting_map_type">Map type</string>
+    <string name="map_type_normal">Normal</string>
+    <string name="map_type_satellite">Satellite</string>
+    <string name="map_type_terrain">Terrain</string>
+    <string name="map_type_hybrid">Hybrid</string>
+    <string name="map_type_sheet_note">Used for the mini map on stamps. These previews are illustrations. Map tiles are only downloaded when map thumbnails are on.</string>
+
+    <!-- Location QR -->
+    <string name="stamp_latitude_longitude_format">Lat %1$s° Long %2$s°</string>
+    <string name="action_show_location_qr">Show location QR</string>
+    <string name="qr_sheet_title">Location QR code</string>
+    <string name="qr_sheet_note">Anyone who scans this code can open this exact location in their map app.</string>
+    <string name="cd_location_qr">QR code containing the captured location</string>
+    <string name="qr_open_in_maps">Open in Maps</string>
+    <string name="qr_share">Share QR</string>
+    <string name="qr_no_map_app">No app on this phone can open maps.</string>
+    <string name="qr_share_failed">Couldn\'t share the QR code.</string>
+
+    <!-- Privacy policy -->
+    <string name="privacy_policy_title">Privacy Policy</string>
+    <string name="privacy_policy_intro">GeoStamp is designed to be privacy-focused. It works without an account, shows no ads and keeps your photos on your device.</string>
+    <string name="privacy_policy_updated">Last updated: 10 October 2026</string>
+    <string name="privacy_data_title">Data collection</string>
+    <string name="privacy_data_body">GeoStamp does not require an account and does not intentionally collect personal data. Your settings are stored only on this device and are excluded from cloud backup.</string>
+    <string name="privacy_ads_title">Advertising</string>
+    <string name="privacy_ads_body">GeoStamp does not display advertisements and contains no advertising SDKs.</string>
+    <string name="privacy_tracking_title">Tracking</string>
+    <string name="privacy_tracking_body">GeoStamp does not include advertising trackers, behavioral analytics, telemetry or crash-reporting SDKs.</string>
+    <string name="privacy_camera_title">Camera</string>
+    <string name="privacy_camera_body">Camera permission is used to capture photos and videos. Images are processed on this device.</string>
+    <string name="privacy_location_title">Location</string>
+    <string name="privacy_location_body">Location permission is used to obtain coordinates, accuracy, direction and address information for location stamps. Location is used only while the camera is open, never in the background. The camera works without it.</string>
+    <string name="privacy_microphone_title">Microphone</string>
+    <string name="privacy_microphone_body">Microphone access is only used when recording video with audio. Without it, videos are recorded silently.</string>
+    <string name="privacy_storage_title">Photo storage</string>
+    <string name="privacy_storage_body">Captured photos and videos are saved on your device in Pictures/GeoStamp and Movies/GeoStamp. They remain on your device unless you explicitly share or export them.</string>
+    <string name="privacy_exif_title">EXIF metadata</string>
+    <string name="privacy_exif_body">If \"Save GPS in photo metadata\" is on, coordinates are written into each photo\'s EXIF metadata. This setting is off by default, and while it is off GeoStamp removes GPS tags from the photos it saves.\n\nLocation metadata and visible stamps can reveal where a photo was taken. Check your photos before sharing them.</string>
+    <string name="privacy_maps_title">Map thumbnails</string>
+    <string name="privacy_maps_body">If map thumbnails are on, GeoStamp downloads map tiles around your position from the provider of the selected map type: OpenStreetMap for Normal and Hybrid, OpenTopoMap for Terrain, and EOX for Satellite and Hybrid. These requests reveal your approximate location and your IP address to that provider. Tiles are cached on your device for up to 7 days. You can turn map thumbnails off in Settings.</string>
+    <string name="privacy_weather_title">Weather</string>
+    <string name="privacy_weather_body">If Weather on stamps is on, your coordinates, rounded to about 100 metres, are sent to Open-Meteo (open-meteo.com) to fetch current conditions. Weather is off by default.</string>
+    <string name="privacy_geocoding_title">Reverse geocoding</string>
+    <string name="privacy_geocoding_body">If Address lookup is on, your current coordinates are sent to your phone\'s built-in geocoding service to turn them into an address. On most Android phones this service is provided by Google. You can turn Address lookup off and type an address yourself.</string>
+    <string name="privacy_sharing_title">Sharing</string>
+    <string name="privacy_sharing_body">GeoStamp never uploads photos or videos automatically. Sharing happens only when you choose Share. Opening a location in a map app passes its coordinates to that app. Location QR codes are created on your device and contain only a map link with the coordinates.</string>
+    <string name="privacy_credits_title">Map credits</string>
+    <string name="privacy_credits_body" translatable="false">Map data © OpenStreetMap contributors, available under the Open Database License (ODbL).\n\nTerrain: © OpenTopoMap (CC-BY-SA), with elevation data from SRTM.\n\nSatellite: EOxCloudless https://cloudless.eox.at by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2023), licensed CC BY-NC-SA 4.0 for non-commercial use.</string>
+    <string name="privacy_contact_title">Contact and app information</string>
+    <string name="privacy_contact_body">%1$s %2$s (%3$s). For privacy questions, contact the developer through the page where you downloaded GeoStamp.</string>
 </resources>

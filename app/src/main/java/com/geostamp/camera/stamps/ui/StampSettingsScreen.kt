@@ -257,6 +257,7 @@ private fun FieldsSection(settings: AppSettings, update: ((StampFields) -> Stamp
             R.string.field_weather, fields.weather,
             hint = R.string.field_needs_weather.takeIf { !services.weather }
         ) { v -> update { it.copy(weather = v) } }
+        FieldSwitch(R.string.field_qr_code, fields.qrCode) { v -> update { it.copy(qrCode = v) } }
         FieldSwitch(R.string.field_custom_text, fields.customText) { v -> update { it.copy(customText = v) } }
         FieldSwitch(R.string.field_logo, fields.logo) { v -> update { it.copy(logo = v) } }
     }

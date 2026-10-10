@@ -1,5 +1,18 @@
 package com.geostamp.camera.environment
 
+/**
+ * A normalized address that works for any country. Every field is optional, and nothing assumes a
+ * particular national layout:
+ *
+ * - [houseNumber] and [street] are the house number and road.
+ * - [building] is a named building or premises.
+ * - [neighbourhood], [colony] and [subLocality] are a neighbourhood, residential area or suburb.
+ * - [locality] is the city, town or village.
+ * - [district] is a county or district, the platform's sub-admin area.
+ * - [adminArea] is the state, province or region.
+ * - [postalCode], [country] and [countryCode] are the postcode, country name and ISO 3166 code.
+ * - [addressLines] is the provider's own formatted address, which already follows local conventions.
+ */
 data class AddressParts(
     val houseNumber: String? = null,
     val street: String? = null,
@@ -12,7 +25,8 @@ data class AddressParts(
     val colony: String? = null,
     val neighbourhood: String? = null,
     val district: String? = null,
-    val addressLines: List<String> = emptyList()
+    val addressLines: List<String> = emptyList(),
+    val countryCode: String? = null
 )
 
 enum class AddressDetail { DETAILED, STANDARD, SHORT }
@@ -70,12 +84,26 @@ object AddressFormatter {
 
     private fun containsComponent(piece: String, component: String): Boolean =
         piece.equals(component, ignoreCase = true) ||
+            // Chinese, Japanese, Thai and similar scripts have no spaces between words, so word boundaries never match.
+            (component.any(::isUnspacedScript) && piece.contains(component, ignoreCase = true)) ||
             Regex("(?<![\\p{L}\\p{N}])${Regex.escape(component)}(?![\\p{L}\\p{N}])", RegexOption.IGNORE_CASE).containsMatchIn(piece)
+
+    private fun isUnspacedScript(char: Char): Boolean =
+        Character.UnicodeScript.of(char.code) in UNSPACED_SCRIPTS
+
+    private val UNSPACED_SCRIPTS = setOf(
+        Character.UnicodeScript.HAN, Character.UnicodeScript.HIRAGANA, Character.UnicodeScript.KATAKANA,
+        Character.UnicodeScript.THAI, Character.UnicodeScript.LAO, Character.UnicodeScript.KHMER, Character.UnicodeScript.MYANMAR
+    )
 
     private fun unique(pieces: List<String>): String? = pieces.fold(mutableListOf<String>()) { result, piece ->
         if (result.none { it.equals(piece, ignoreCase = true) }) result += piece
         result
     }.joinToString(", ").ifEmpty { null }
 
-    private fun String?.clean(): String? = this?.trim()?.takeIf { it.isNotEmpty() }
+    private fun String?.clean(): String? =
+        this?.trim()?.trim(',', ';', ' ')?.takeIf { it.isNotEmpty() && it.lowercase() !in PLACEHOLDERS && it.any(Char::isLetterOrDigit) }
+
+    /** Values some geocoders return instead of leaving a field empty. They are never shown. */
+    private val PLACEHOLDERS = setOf("null", "unknown", "unnamed road", "unnamed", "n/a", "none", "undefined")
 }

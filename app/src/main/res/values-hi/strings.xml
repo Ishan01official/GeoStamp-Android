@@ -145,7 +145,7 @@
     <string name="setting_address">पता खोज</string>
     <string name="setting_address_summary">निर्देशांक आपके फ़ोन के जियोकोडिंग प्रदाता को भेजता है। डिफ़ॉल्ट रूप से चालू; आप इसे बंद कर सकते हैं।</string>
     <string name="setting_map_tiles">मैप थंबनेल</string>
-    <string name="setting_map_tiles_summary">स्टैम्प के छोटे नक्शे के लिए OpenStreetMap टाइल डाउनलोड करता है। डिफ़ॉल्ट रूप से चालू; आप इसे बंद कर सकते हैं।</string>
+    <string name="setting_map_tiles_summary">स्टैम्प के छोटे नक्शे के लिए मैप टाइल डाउनलोड करता है। डिफ़ॉल्ट रूप से चालू; आप इसे बंद कर सकते हैं।</string>
     <string name="setting_map_link">लोकेशन यहाँ खोलें</string>
     <string name="map_osm">OpenStreetMap</string>
     <string name="map_google">Google Maps</string>
@@ -170,7 +170,6 @@
     <string name="setting_permissions_summary">कैमरा, लोकेशन और माइक्रोफ़ोन की अनुमति</string>
     <string name="privacy_summary">कोई विज्ञापन, ट्रैकर या खाता नहीं। जब तक आप साझा न करें, फ़ोटो आपके डिवाइस पर ही रहती हैं।</string>
     <string name="about_version">संस्करण</string>
-    <string name="about_source">सोर्स कोड</string>
     <string name="about_privacy">गोपनीयता नीति</string>
 
     <string name="gallery_title">गैलरी</string>
@@ -256,7 +255,7 @@
     <string name="location_help_searching_title">आपकी जगह खोजी जा रही है</string>
     <string name="location_help_searching_body">GPS खुले में या खिड़की के पास सबसे अच्छा काम करता है। सही स्थिति मिलने तक फ़ोटो बिना निर्देशांक के सहेजी जाती हैं। निर्देशांक कभी अनुमान से नहीं लिखे जाते।</string>
     <string name="gps_approximate">अनुमानित</string>
-    <string name="cd_location_status">जगह की स्थिति: %1$s। मदद के लिए दो बार टैप करें।</string>
+    <string name="cd_location_status">जगह की स्थिति: %1$s। जानकारी के लिए दो बार टैप करें।</string>
     <string name="address_none_detected">कोई पता नहीं मिला</string>
     <string name="cd_edit_address">स्टैम्प पर पता: %1$s। बदलने के लिए दो बार टैप करें।</string>
     <string name="address_edited_badge">बदला गया</string>
@@ -326,4 +325,53 @@
         <item quantity="one">रिकॉर्डिंग चल रही है, %2$d में से %1$d सेकंड</item>
         <item quantity="other">रिकॉर्डिंग चल रही है, %2$d में से %1$d सेकंड</item>
     </plurals>
+
+    <!-- Map types, location QR and privacy policy -->
+    <string name="template_qr_location">QR लोकेशन</string>
+    <string name="field_qr_code">लोकेशन QR कोड</string>
+    <string name="setting_map_type">मैप का प्रकार</string>
+    <string name="map_type_normal">सामान्य</string>
+    <string name="map_type_satellite">सैटेलाइट</string>
+    <string name="map_type_terrain">भू-भाग</string>
+    <string name="map_type_hybrid">हाइब्रिड</string>
+    <string name="map_type_sheet_note">स्टैम्प के छोटे नक्शे के लिए इस्तेमाल होता है। ये प्रीव्यू सिर्फ़ चित्र हैं। मैप टाइल तभी डाउनलोड होती हैं जब मैप थंबनेल चालू हों।</string>
+    <string name="stamp_latitude_longitude_format">अक्षांश %1$s° देशांतर %2$s°</string>
+    <string name="action_show_location_qr">लोकेशन QR दिखाएं</string>
+    <string name="qr_sheet_title">लोकेशन QR कोड</string>
+    <string name="qr_sheet_note">इस कोड को स्कैन करने वाला कोई भी व्यक्ति इस सटीक जगह को अपने मैप ऐप में खोल सकता है।</string>
+    <string name="cd_location_qr">कैप्चर की गई जगह वाला QR कोड</string>
+    <string name="qr_open_in_maps">मैप में खोलें</string>
+    <string name="qr_share">QR शेयर करें</string>
+    <string name="qr_no_map_app">इस फ़ोन पर मैप खोलने वाला कोई ऐप नहीं है।</string>
+    <string name="qr_share_failed">QR कोड शेयर नहीं हो सका।</string>
+    <string name="privacy_policy_title">निजता नीति</string>
+    <string name="privacy_policy_intro">GeoStamp को निजता को ध्यान में रखकर बनाया गया है। यह बिना खाते के चलता है, कोई विज्ञापन नहीं दिखाता और आपकी फ़ोटो आपके डिवाइस पर ही रखता है।</string>
+    <string name="privacy_policy_updated">पिछली बार अपडेट किया गया: 10 अक्टूबर 2026</string>
+    <string name="privacy_data_title">डेटा संग्रह</string>
+    <string name="privacy_data_body">GeoStamp के लिए खाते की ज़रूरत नहीं है और यह जान-बूझकर कोई निजी डेटा इकट्ठा नहीं करता। आपकी सेटिंग सिर्फ़ इसी डिवाइस पर रहती हैं और क्लाउड बैकअप में शामिल नहीं होतीं।</string>
+    <string name="privacy_ads_title">विज्ञापन</string>
+    <string name="privacy_ads_body">GeoStamp विज्ञापन नहीं दिखाता और इसमें कोई विज्ञापन SDK नहीं है।</string>
+    <string name="privacy_tracking_title">ट्रैकिंग</string>
+    <string name="privacy_tracking_body">GeoStamp में कोई विज्ञापन ट्रैकर, व्यवहार विश्लेषण, टेलीमेट्री या क्रैश रिपोर्टिंग SDK नहीं है।</string>
+    <string name="privacy_camera_title">कैमरा</string>
+    <string name="privacy_camera_body">कैमरे की अनुमति फ़ोटो और वीडियो लेने के लिए इस्तेमाल होती है। तस्वीरें इसी डिवाइस पर प्रोसेस होती हैं।</string>
+    <string name="privacy_location_title">जगह</string>
+    <string name="privacy_location_body">जगह की अनुमति लोकेशन स्टैम्प के लिए निर्देशांक, सटीकता, दिशा और पते की जानकारी पाने के लिए इस्तेमाल होती है। जगह सिर्फ़ तब इस्तेमाल होती है जब कैमरा खुला हो, बैकग्राउंड में कभी नहीं। कैमरा इसके बिना भी चलता है।</string>
+    <string name="privacy_microphone_title">माइक्रोफ़ोन</string>
+    <string name="privacy_microphone_body">माइक्रोफ़ोन सिर्फ़ आवाज़ के साथ वीडियो रिकॉर्ड करते समय इस्तेमाल होता है। इसके बिना वीडियो बिना आवाज़ के रिकॉर्ड होते हैं।</string>
+    <string name="privacy_storage_title">फ़ोटो स्टोरेज</string>
+    <string name="privacy_storage_body">ली गई फ़ोटो और वीडियो आपके डिवाइस पर Pictures/GeoStamp और Movies/GeoStamp में सेव होते हैं। जब तक आप ख़ुद शेयर या एक्सपोर्ट न करें, वे आपके डिवाइस पर ही रहते हैं।</string>
+    <string name="privacy_exif_title">EXIF मेटाडेटा</string>
+    <string name="privacy_exif_body">अगर \"फ़ोटो मेटाडेटा में GPS सेव करें\" चालू है, तो निर्देशांक हर फ़ोटो के EXIF मेटाडेटा में लिखे जाते हैं। यह सेटिंग डिफ़ॉल्ट रूप से बंद है, और बंद रहने पर GeoStamp सेव की जाने वाली फ़ोटो से GPS टैग हटा देता है।\n\nलोकेशन मेटाडेटा और दिखने वाले स्टैम्प से पता चल सकता है कि फ़ोटो कहां ली गई थी। शेयर करने से पहले अपनी फ़ोटो जांच लें।</string>
+    <string name="privacy_maps_title">मैप थंबनेल</string>
+    <string name="privacy_maps_body">अगर मैप थंबनेल चालू हैं, तो GeoStamp चुने गए मैप प्रकार की सेवा से आपकी जगह के आसपास की मैप टाइल डाउनलोड करता है: सामान्य और हाइब्रिड के लिए OpenStreetMap, भू-भाग के लिए OpenTopoMap, और सैटेलाइट व हाइब्रिड के लिए EOX। इन अनुरोधों से उस सेवा को आपकी अनुमानित जगह और IP पता पता चलता है। टाइल आपके डिवाइस पर 7 दिन तक कैश रहती हैं। आप सेटिंग में मैप थंबनेल बंद कर सकते हैं।</string>
+    <string name="privacy_weather_title">मौसम</string>
+    <string name="privacy_weather_body">अगर स्टैम्प पर मौसम चालू है, तो मौजूदा मौसम जानने के लिए आपके निर्देशांक, लगभग 100 मीटर तक राउंड करके, Open-Meteo (open-meteo.com) को भेजे जाते हैं। यह डिफ़ॉल्ट रूप से बंद है।</string>
+    <string name="privacy_geocoding_title">रिवर्स जियोकोडिंग</string>
+    <string name="privacy_geocoding_body">अगर पता खोज चालू है, तो आपके मौजूदा निर्देशांक पते में बदलने के लिए फ़ोन की बिल्ट-इन जियोकोडिंग सेवा को भेजे जाते हैं। ज़्यादातर Android फ़ोन पर यह सेवा Google देता है। आप पता खोज बंद करके पता ख़ुद लिख सकते हैं।</string>
+    <string name="privacy_sharing_title">शेयर करना</string>
+    <string name="privacy_sharing_body">GeoStamp कभी भी फ़ोटो या वीडियो अपने-आप अपलोड नहीं करता। शेयर तभी होता है जब आप शेयर चुनते हैं। किसी जगह को मैप ऐप में खोलने पर उसके निर्देशांक उस ऐप को मिलते हैं। लोकेशन QR कोड आपके डिवाइस पर बनते हैं और उनमें सिर्फ़ निर्देशांक वाला मैप लिंक होता है।</string>
+    <string name="privacy_credits_title">मैप स्रोत</string>
+    <string name="privacy_contact_title">संपर्क और ऐप की जानकारी</string>
+    <string name="privacy_contact_body">%1$s %2$s (%3$s)। निजता से जुड़े सवालों के लिए, जिस पेज से आपने GeoStamp डाउनलोड किया था, वहां से डेवलपर से संपर्क करें।</string>
 </resources>

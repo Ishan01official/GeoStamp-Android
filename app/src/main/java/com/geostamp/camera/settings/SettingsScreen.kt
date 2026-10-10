@@ -16,7 +16,6 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.AdminPanelSettings
 import androidx.compose.material.icons.outlined.CenterFocusStrong
 import androidx.compose.material.icons.outlined.Cloud
-import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.ColorLens
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.DarkMode
@@ -44,6 +43,8 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -64,12 +65,15 @@ import com.geostamp.camera.ui.labelRes
 import com.geostamp.camera.ui.theme.Dimens
 import kotlin.math.roundToInt
 
-private const val SOURCE_URL = "https://github.com/Ishan01official/GeoStamp-Android"
-private const val PRIVACY_URL = "$SOURCE_URL/blob/main/PRIVACY.md"
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onOpenStampSettings: () -> Unit, onOpenDiagnostics: () -> Unit) {
+fun SettingsScreen(
+    viewModel: SettingsViewModel,
+    onBack: () -> Unit,
+    onOpenStampSettings: () -> Unit,
+    onOpenDiagnostics: () -> Unit,
+    onOpenPrivacyPolicy: () -> Unit
+) {
     val settings = viewModel.settings.collectAsStateWithLifecycle().value ?: return
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -199,6 +203,20 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onOpenStamp
             }
             item {
                 SettingsSection(stringResource(R.string.section_maps)) {
+                    var pickMapType by rememberSaveable { mutableStateOf(false) }
+                    ClickRow(
+                        title = stringResource(R.string.setting_map_type),
+                        summary = stringResource(settings.services.mapType.labelRes),
+                        onClick = { pickMapType = true },
+                        icon = Icons.Outlined.Layers
+                    )
+                    if (pickMapType) {
+                        MapTypeSheet(
+                            selected = settings.services.mapType,
+                            onSelect = { v -> update { it.copy(services = it.services.copy(mapType = v)) } },
+                            onDismiss = { pickMapType = false }
+                        )
+                    }
                     SwitchRow(
                         title = stringResource(R.string.setting_map_tiles),
                         summary = stringResource(R.string.setting_map_tiles_summary),
@@ -211,7 +229,8 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onOpenStamp
                         options = MapLinkProvider.entries,
                         selected = settings.services.mapLinkProvider,
                         label = { stringResource(it.labelRes) },
-                        onSelect = { v -> update { it.copy(services = it.services.copy(mapLinkProvider = v)) } }
+                        onSelect = { v -> update { it.copy(services = it.services.copy(mapLinkProvider = v)) } },
+                        icon = Icons.Outlined.Place
                     )
                     val cleared = stringResource(R.string.map_cache_cleared)
                     ClickRow(
@@ -322,15 +341,9 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onOpenStamp
                         onClick = onOpenDiagnostics
                     )
                     ClickRow(
-                        title = stringResource(R.string.about_source),
-                        summary = SOURCE_URL.removePrefix("https://"),
-                        icon = Icons.Outlined.Code,
-                        onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(SOURCE_URL))) }
-                    )
-                    ClickRow(
                         title = stringResource(R.string.about_privacy),
                         icon = Icons.Outlined.Policy,
-                        onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_URL))) }
+                        onClick = onOpenPrivacyPolicy
                     )
                 }
             }

@@ -20,6 +20,7 @@ class StampResources(private val context: Context) {
             altitude = res.getString(R.string.stamp_altitude_format),
             speed = res.getString(R.string.stamp_speed_format),
             weatherSource = res.getString(R.string.stamp_weather_source_format),
+            latitudeLongitude = res.getString(R.string.stamp_latitude_longitude_format),
             weather = WeatherCondition.entries.associateWith { res.getString(weatherName(it)) }
         )
     }
@@ -36,10 +37,7 @@ class StampResources(private val context: Context) {
     fun contentBuilder(): StampContentBuilder = StampContentBuilder(labels = labels())
 
     fun renderer(): StampRenderer =
-        StampRenderer(
-            iconProvider = { icon -> iconDrawable(icon) },
-            mapAttribution = context.getString(R.string.map_attribution)
-        )
+        StampRenderer(iconProvider = { icon -> iconDrawable(icon) })
 
     fun loadLogo(path: String?, maxSize: Int = LOGO_MAX_SIZE): Bitmap? {
         val file = path?.let(::File)?.takeIf { it.exists() } ?: return null

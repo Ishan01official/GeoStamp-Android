@@ -17,6 +17,7 @@ import com.geostamp.camera.diagnostics.DiagnosticsScreen
 import com.geostamp.camera.gallery.GalleryScreen
 import com.geostamp.camera.gallery.GalleryViewModel
 import com.geostamp.camera.gallery.MediaViewerScreen
+import com.geostamp.camera.privacy.PrivacyPolicyScreen
 import com.geostamp.camera.settings.MapLinkProvider
 import com.geostamp.camera.settings.SettingsScreen
 import com.geostamp.camera.settings.SettingsViewModel
@@ -29,6 +30,7 @@ private object Routes {
     const val SETTINGS = "settings"
     const val STAMP = "stamp"
     const val DIAGNOSTICS = "diagnostics"
+    const val PRIVACY = "privacy"
 
     fun viewer(uri: Uri) = "viewer?uri=${Uri.encode(uri.toString())}"
 }
@@ -62,7 +64,7 @@ fun GeoStampNavHost(settingsViewModel: SettingsViewModel) {
             MediaViewerScreen(
                 uri = uri,
                 viewModel = galleryViewModel,
-                mapLinkProvider = settings?.services?.mapLinkProvider ?: MapLinkProvider.OPEN_STREET_MAP,
+                mapLinkProvider = settings?.services?.mapLinkProvider ?: MapLinkProvider.DEFAULT,
                 onBack = { navController.popBackStack() }
             )
         }
@@ -71,8 +73,12 @@ fun GeoStampNavHost(settingsViewModel: SettingsViewModel) {
                 viewModel = settingsViewModel,
                 onBack = { navController.popBackStack() },
                 onOpenStampSettings = { navController.navigate(Routes.STAMP) },
-                onOpenDiagnostics = { navController.navigate(Routes.DIAGNOSTICS) }
+                onOpenDiagnostics = { navController.navigate(Routes.DIAGNOSTICS) },
+                onOpenPrivacyPolicy = { navController.navigate(Routes.PRIVACY) }
             )
+        }
+        composable(Routes.PRIVACY) {
+            PrivacyPolicyScreen(onBack = { navController.popBackStack() })
         }
         composable(Routes.DIAGNOSTICS) {
             DiagnosticsScreen(onBack = { navController.popBackStack() })
