@@ -284,4 +284,26 @@
     <string name="location_help_searching_body">GPS works best outdoors or near a window. Until a fix is ready, photos are saved without coordinates. Coordinates are never guessed.</string>
     <string name="gps_approximate">Approximate</string>
     <string name="cd_location_status">Location status: %1$s. Double tap for help.</string>
+    <string name="address_none_detected">No address detected</string>
+    <string name="cd_edit_address">Address on stamp: %1$s. Double tap to edit.</string>
+    <string name="address_edited_badge">Edited</string>
+    <string name="address_edit_title">Edit address</string>
+    <string name="address_detected_label">Detected automatically</string>
+    <string name="address_field_label">Address to stamp</string>
+    <string name="address_preview_label">Preview</string>
+    <string name="address_preview_empty">Type an address</string>
+    <string name="address_scope_next">Next photo or video only</string>
+    <string name="address_scope_session">Until I close the app</string>
+    <string name="address_edit_note">GPS coordinates are not changed. The photo\'s details will show that the address was entered manually.</string>
+    <string name="address_restore">Use detected address</string>
+    <string name="save">Save</string>
+    <string name="setting_house_numbers">Show house numbers</string>
+    <string name="setting_house_numbers_summary">Only when two lookups agree with a precise fix. Map services often guess house numbers wrongly.</string>
+    <string name="info_address_source">Address</string>
+    <string name="info_address_manual">Entered manually</string>
+    <string name="info_address_detected">Detected from location</string>
+    <string name="address_edit_saved">Saved as a new photo with the edited address. The original photo is kept.</string>
+    <string name="address_edit_failed">Could not save the edited photo. Nothing was changed.</string>
+    <string name="address_edit_unavailable">This photo\'s stamp is part of the picture, and no unstamped original was saved, so its address cannot be changed. Turn on \"Keep original photos\" in Settings to edit future photos.</string>
+    <string name="address_edit_existing_note">A new stamped copy is made from the unstamped original. Both existing photos are kept and GPS coordinates are not changed.</string>
 </resources>

@@ -12,7 +12,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 class AddressResolver(private val context: Context) {
     val isAvailable: Boolean get() = Geocoder.isPresent()
 
-    suspend fun resolve(latitude: Double, longitude: Double, locale: Locale = Locale.getDefault()): String? {
+    suspend fun resolve(latitude: Double, longitude: Double, locale: Locale = Locale.getDefault()): AddressParts? {
         if (!isAvailable) return null
         val geocoder = Geocoder(context, locale)
         val address = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -31,12 +31,18 @@ class AddressResolver(private val context: Context) {
             @Suppress("DEPRECATION")
             geocoder.getFromLocation(latitude, longitude, 1)?.firstOrNull()
         }
-        return address?.format()
+        return address?.toParts()
     }
 
-    private fun Address.format(): String? {
-        val line = getAddressLine(0)?.trim()
-        if (!line.isNullOrEmpty()) return line
-        return listOfNotNull(locality, adminArea, countryName).joinToString(", ").ifEmpty { null }
-    }
+    /** Components only; the provider's pre-formatted line embeds house numbers we cannot verify. */
+    private fun Address.toParts(): AddressParts? =
+        AddressParts(
+            houseNumber = subThoroughfare,
+            street = thoroughfare,
+            subLocality = subLocality,
+            locality = locality ?: subAdminArea,
+            adminArea = adminArea,
+            postalCode = postalCode,
+            country = countryName
+        ).takeIf { AddressFormatter.format(it, includeHouseNumber = false) != null }
 }

@@ -119,7 +119,8 @@ fun GalleryScreen(
                     consentLauncher.launch(IntentSenderRequest.Builder(request.intentSender).build())
                 }
             }
-            null -> Unit
+            // Address edits are reported by the viewer that started them.
+            is GalleryMessage.AddressEdited, GalleryMessage.AddressEditFailed, null -> Unit
         }
     }
 

@@ -2,6 +2,7 @@ package com.geostamp.camera
 
 import android.app.Application
 import android.content.Context
+import com.geostamp.camera.address.AddressOverrideRepository
 import com.geostamp.camera.capture.MediaStoreWriter
 import com.geostamp.camera.capture.PhotoProcessor
 import com.geostamp.camera.capture.VideoStampProcessor
@@ -37,6 +38,7 @@ class AppContainer(context: Context) {
     val applicationScope = CoroutineScope(SupervisorJob())
 
     val settingsRepository = SettingsRepository(appContext)
+    val addressOverrides = AddressOverrideRepository()
     val cameraCapabilityRepository = CameraCapabilityRepository(appContext)
     val locationRepository = LocationRepository(ForegroundLocationTracker(appContext))
     val compassRepository = CompassRepository(CompassMonitor(appContext))

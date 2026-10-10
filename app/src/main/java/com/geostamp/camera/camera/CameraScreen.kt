@@ -227,6 +227,9 @@ private fun CameraScreen(
     val location by viewModel.location.collectAsStateWithLifecycle()
     val compass by viewModel.compass.collectAsStateWithLifecycle()
     val liveStamp by viewModel.liveStamp.collectAsStateWithLifecycle()
+    val detectedAddress by viewModel.detectedAddress.collectAsStateWithLifecycle()
+    val addressOverride by viewModel.addressOverride.collectAsStateWithLifecycle()
+    var showAddressEditor by rememberSaveable { mutableStateOf(false) }
     val zoomState by viewModel.session.zoomState.observeAsState()
     val iconRotation = rememberIconRotation()
     val snackbar = remember { SnackbarHostState() }
@@ -367,6 +370,11 @@ private fun CameraScreen(
             zoomPresets = zoomState?.let { ZoomPresets.forRange(it.minZoomRatio, it.maxZoomRatio) }.orEmpty(),
             zoomRatio = zoomState?.zoomRatio ?: 1f,
             stampEnabled = settings.stamp.enabled,
+            addressBar = if (settings.stamp.enabled && settings.stamp.fields.address && capture.recordingSeconds == null) {
+                { AddressBar(detectedAddress, addressOverride, onEdit = { showAddressEditor = true }, modifier = Modifier.padding(horizontal = Dimens.SpaceL)) }
+            } else {
+                null
+            },
             simpleMode = settings.camera.simpleMode,
             iconRotation = iconRotation,
             onOpenGallery = onOpenGallery,
@@ -377,6 +385,22 @@ private fun CameraScreen(
         SnackbarHost(
             snackbar,
             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 180.dp)
+        )
+    }
+
+    if (showAddressEditor) {
+        AddressEditDialog(
+            detected = detectedAddress,
+            override = addressOverride,
+            onSave = { text, scope ->
+                viewModel.setAddressOverride(text, scope)
+                showAddressEditor = false
+            },
+            onRestoreDetected = {
+                viewModel.restoreDetectedAddress()
+                showAddressEditor = false
+            },
+            onDismiss = { showAddressEditor = false }
         )
     }
 
@@ -415,6 +439,7 @@ private fun BottomControls(
     zoomPresets: List<Float>,
     zoomRatio: Float,
     stampEnabled: Boolean,
+    addressBar: (@Composable () -> Unit)?,
     simpleMode: Boolean,
     iconRotation: Float,
     onOpenGallery: () -> Unit,
@@ -436,6 +461,7 @@ private fun BottomControls(
             capture.mode.isPhotoMode() && !stampEnabled ->
                 CameraChip(stringResource(R.string.stamp_off_badge))
         }
+        addressBar?.invoke()
         if (!simpleMode) {
             ZoomSelector(presets = zoomPresets, current = zoomRatio, onSelect = viewModel::setZoom)
         }

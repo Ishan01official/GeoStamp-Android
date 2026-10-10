@@ -27,7 +27,20 @@ data class MediaItem(
     /** Photos saved by the camera with a burned-in stamp. Originals and videos carry no stamp. */
     val isStamped: Boolean get() = isStampedName(displayName, isVideo)
 
+    /** Unstamped pixels to re-stamp from: the item itself, or the original saved alongside a stamped photo. */
+    fun unstampedSource(all: List<MediaItem>): MediaItem? {
+        val name = unstampedSourceName(displayName, isVideo) ?: return null
+        return if (name == displayName) this else all.firstOrNull { !it.isVideo && it.displayName == name }
+    }
+
     companion object {
+        /** File name holding unstamped pixels for [displayName]: itself if unstamped, else its saved original. */
+        fun unstampedSourceName(displayName: String, isVideo: Boolean): String? = when {
+            isVideo -> null
+            !isStampedName(displayName, isVideo = false) -> displayName
+            else -> displayName.substringBeforeLast('.') + MediaStoreWriter.ORIGINAL_SUFFIX + ".jpg"
+        }
+
         fun isStampedName(displayName: String, isVideo: Boolean): Boolean =
             !isVideo && !displayName.substringBeforeLast('.').endsWith(MediaStoreWriter.ORIGINAL_SUFFIX)
     }
@@ -40,7 +53,9 @@ data class PhotoMetadataInfo(
     val longitude: Double?,
     val altitudeMeters: Double?,
     val dateTimeOriginal: String?,
-    val cameraModel: String?
+    val cameraModel: String?,
+    /** True when GeoStamp recorded that the stamped address was typed by the user; null if unknown. */
+    val addressEnteredManually: Boolean? = null
 )
 
 /** Reads the app's own photos and videos from shared storage. */
@@ -89,7 +104,10 @@ class GalleryRepository(private val resolver: ContentResolver) {
                     longitude = latLong?.getOrNull(1),
                     altitudeMeters = exif.getAltitude(Double.NaN).takeUnless { it.isNaN() },
                     dateTimeOriginal = exif.getAttribute(ExifInterface.TAG_DATETIME_ORIGINAL),
-                    cameraModel = exif.getAttribute(ExifInterface.TAG_MODEL)
+                    cameraModel = exif.getAttribute(ExifInterface.TAG_MODEL),
+                    addressEnteredManually = exif.getAttribute(ExifInterface.TAG_USER_COMMENT)
+                        ?.takeIf { it.startsWith(MediaStoreWriter.STAMPED_MARKER) }
+                        ?.contains(MediaStoreWriter.MANUAL_ADDRESS_MARKER)
                 )
             }
         }.getOrNull()

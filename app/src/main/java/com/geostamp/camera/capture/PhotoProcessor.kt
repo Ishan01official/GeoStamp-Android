@@ -59,7 +59,13 @@ class PhotoProcessor(
             upright,
             MediaStoreWriter.displayName(namePrefix, takenAt),
             options.jpegQuality,
-            PhotoMetadata(takenAt, request.data.location, request.preferences.writeExifLocation, stamped = true)
+            PhotoMetadata(
+                takenAt,
+                request.data.location,
+                request.preferences.writeExifLocation,
+                stamped = true,
+                addressSource = request.data.addressSource
+            )
         )
         val thumbnail = thumbnail(upright, THUMBNAIL_SIZE)
         val width = upright.width

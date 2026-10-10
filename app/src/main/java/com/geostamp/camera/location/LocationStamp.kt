@@ -26,11 +26,7 @@ data class LocationStamp(
     fun isAccurateEnough(maxAccuracyMeters: Float): Boolean =
         hasAccuracy && accuracyMeters <= maxAccuracyMeters
 
-    fun distanceMetersTo(other: LocationStamp): Float {
-        val result = FloatArray(1)
-        Location.distanceBetween(latitude, longitude, other.latitude, other.longitude, result)
-        return result[0]
-    }
+    fun distanceMetersTo(other: LocationStamp): Float = LocationStabilizer.distanceMeters(this, other)
 
     fun coordinates(): String = String.format(Locale.US, "%.6f, %.6f", latitude, longitude)
     fun openStreetMapUrl(): String =

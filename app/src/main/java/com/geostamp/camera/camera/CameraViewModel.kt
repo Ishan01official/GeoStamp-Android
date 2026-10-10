@@ -17,6 +17,10 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.geostamp.camera.R
+import com.geostamp.camera.address.AddressChoice
+import com.geostamp.camera.address.AddressEditScope
+import com.geostamp.camera.address.AddressOverride
+import com.geostamp.camera.address.StampAddress
 import com.geostamp.camera.appContainer
 import com.geostamp.camera.capture.CaptureMode
 import com.geostamp.camera.capture.CapturedImageDecoder
@@ -87,6 +91,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     private val locationRepository = container.locationRepository
     private val compassRepository = container.compassRepository
     private val environment = container.environmentRepository
+    private val addressOverrides = container.addressOverrides
     private val captureExecutor = Executors.newSingleThreadExecutor()
 
     val session = CameraSession(application)
@@ -95,6 +100,16 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
     val location: StateFlow<LocationUpdate?> = locationRepository.updates
     val compass = compassRepository.updates
+    val addressOverride: StateFlow<AddressOverride?> = addressOverrides.override
+
+    /** The automatically detected address for the current stable location, shown in the edit dialog. */
+    val detectedAddress: StateFlow<String?> = combine(location, environment.snapshot) { update, _ ->
+        environment.forCapture((update as? LocationUpdate.Available)?.location).address?.value
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT), null)
+
+    fun setAddressOverride(text: String, scope: AddressEditScope) = addressOverrides.set(text, scope)
+
+    fun restoreDetectedAddress() = addressOverrides.restoreDetected()
 
     private val _capture = MutableStateFlow(CaptureUiState())
     val capture: StateFlow<CaptureUiState> = _capture.asStateFlow()
@@ -112,7 +127,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
 
     /** The stamp exactly as it would be burned in right now, rendered at preview scale. */
     val liveStamp: StateFlow<Bitmap?> = combine(
-        overlaySize, settings.filterNotNull(), location, compass, environment.snapshot, logo, clockTicks()
+        overlaySize, settings.filterNotNull(), location, compass, environment.snapshot, logo, clockTicks(), addressOverrides.override
     ) { values ->
         @Suppress("UNCHECKED_CAST")
         LiveStampInput(
@@ -151,11 +166,13 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
         viewModelScope.launch {
-            combine(location, settings.filterNotNull()) { update, appSettings -> update to appSettings.services }
-                .collect { (update, services) ->
+            combine(location, settings.filterNotNull()) { update, appSettings -> update to appSettings }
+                .collect { (update, appSettings) ->
                     val fix = (update as? LocationUpdate.Available)?.location
                     compassRepository.setReferenceLocation(fix)
-                    if (fix != null && services.anyEnabled) environment.onLocation(fix, services)
+                    if (fix != null && appSettings.services.anyEnabled) {
+                        environment.onLocation(fix, appSettings.services, appSettings.location.showHouseNumbers)
+                    }
                 }
         }
         viewModelScope.launch {
@@ -282,13 +299,16 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         val capturedAt = System.currentTimeMillis()
         val fix = usableLocation(appSettings, capturedAt)
         val nearby = environment.forCapture(fix)
+        val address = stampAddress(nearby.address?.value)
+        addressOverrides.onCaptureCompleted()
         val request = StampRequest(
             data = StampData(
                 capturedAtMillis = capturedAt,
                 location = fix,
                 heading = compassRepository.latestReading,
-                address = nearby.address?.value,
-                weather = nearby.weather?.value
+                address = address.text,
+                weather = nearby.weather?.value,
+                addressSource = address.source
             ),
             preferences = appSettings.stamp,
             map = nearby.map?.value,
@@ -382,6 +402,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
             }
             is VideoRecordEvent.Finalize -> {
                 val samples = stopVideoMetadataSampling()
+                addressOverrides.onCaptureCompleted()
                 _capture.update { it.copy(recordingSeconds = null) }
                 recording = null
                 if (event.hasError() && event.error != VideoRecordEvent.Finalize.ERROR_SOURCE_INACTIVE) {
@@ -417,14 +438,16 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         val appSettings = settings.value
         val fix = appSettings?.let { usableDisplayLocation(it, nowMillis) }
         val nearby = environment.forCapture(fix)
+        val address = stampAddress(nearby.address?.value)
         return VideoStampSample(
             elapsedMillis = (nowMillis - startedAtMillis).coerceAtLeast(0L),
             data = StampData(
                 capturedAtMillis = nowMillis,
                 location = fix,
                 heading = compassRepository.latestReading,
-                address = nearby.address?.value,
-                weather = nearby.weather?.value
+                address = address.text,
+                weather = nearby.weather?.value,
+                addressSource = address.source
             ),
             map = nearby.map?.value,
             logo = logo.value
@@ -477,6 +500,8 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         _events.trySend(CameraEvent.Saved(uri, isVideo = true))
     }
 
+    private fun stampAddress(detected: String?): StampAddress = AddressChoice.effective(detected, addressOverrides.override.value)
+
     private fun applyCameraConfig() {
         val camera = settings.value?.camera ?: return
         val state = _capture.value
@@ -490,7 +515,8 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         val nearby = environment.forCapture(fix)
         val scale = (LIVE_STAMP_MAX_EDGE.toFloat() / maxOf(width, height)).coerceAtMost(1f)
         val bitmap = Bitmap.createBitmap((width * scale).toInt().coerceAtLeast(1), (height * scale).toInt().coerceAtLeast(1), Bitmap.Config.ARGB_8888)
-        val data = StampData(input.nowMillis, fix, compassRepository.latestReading, nearby.address?.value, nearby.weather?.value)
+        val address = stampAddress(nearby.address?.value)
+        val data = StampData(input.nowMillis, fix, compassRepository.latestReading, address.text, nearby.weather?.value, address.source)
         val resources = container.stampResources
         val content = resources.contentBuilder().build(data, input.settings.stamp, nearby.map != null, input.logo != null)
         resources.renderer().render(

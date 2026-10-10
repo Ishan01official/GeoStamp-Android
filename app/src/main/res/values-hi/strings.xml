@@ -274,4 +274,26 @@
     <string name="location_help_searching_body">GPS खुले में या खिड़की के पास सबसे अच्छा काम करता है। सही स्थिति मिलने तक फ़ोटो बिना निर्देशांक के सहेजी जाती हैं। निर्देशांक कभी अनुमान से नहीं लिखे जाते।</string>
     <string name="gps_approximate">अनुमानित</string>
     <string name="cd_location_status">जगह की स्थिति: %1$s। मदद के लिए दो बार टैप करें।</string>
+    <string name="address_none_detected">कोई पता नहीं मिला</string>
+    <string name="cd_edit_address">स्टैम्प पर पता: %1$s। बदलने के लिए दो बार टैप करें।</string>
+    <string name="address_edited_badge">बदला गया</string>
+    <string name="address_edit_title">पता बदलें</string>
+    <string name="address_detected_label">अपने आप मिला पता</string>
+    <string name="address_field_label">स्टैम्प पर लिखा जाने वाला पता</string>
+    <string name="address_preview_label">पूर्वावलोकन</string>
+    <string name="address_preview_empty">पता लिखें</string>
+    <string name="address_scope_next">केवल अगली फ़ोटो या वीडियो के लिए</string>
+    <string name="address_scope_session">ऐप बंद करने तक</string>
+    <string name="address_edit_note">GPS निर्देशांक नहीं बदले जाते। फ़ोटो के विवरण में दिखेगा कि पता हाथ से लिखा गया था।</string>
+    <string name="address_restore">अपने आप मिला पता इस्तेमाल करें</string>
+    <string name="save">सहेजें</string>
+    <string name="setting_house_numbers">मकान नंबर दिखाएँ</string>
+    <string name="setting_house_numbers_summary">केवल तब जब सटीक स्थिति पर दो बार एक ही नंबर मिले। मैप सेवाएँ अक्सर मकान नंबर गलत बताती हैं।</string>
+    <string name="info_address_source">पता</string>
+    <string name="info_address_manual">हाथ से लिखा गया</string>
+    <string name="info_address_detected">जगह से अपने आप मिला</string>
+    <string name="address_edit_saved">बदले गए पते के साथ नई फ़ोटो सहेजी गई। मूल फ़ोटो सुरक्षित है।</string>
+    <string name="address_edit_failed">बदली गई फ़ोटो सहेजी नहीं जा सकी। कुछ भी नहीं बदला गया।</string>
+    <string name="address_edit_unavailable">इस फ़ोटो का स्टैम्प तस्वीर का हिस्सा है और कोई बिना स्टैम्प वाली मूल फ़ोटो सहेजी नहीं गई, इसलिए पता नहीं बदला जा सकता। आगे की फ़ोटो के लिए सेटिंग में \"मूल फ़ोटो रखें\" चालू करें।</string>
+    <string name="address_edit_existing_note">बिना स्टैम्प वाली मूल फ़ोटो से नई स्टैम्प वाली प्रति बनेगी। दोनों मौजूदा फ़ोटो रखी जाएँगी और GPS निर्देशांक नहीं बदलेंगे।</string>
 </resources>

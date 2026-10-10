@@ -8,6 +8,7 @@ import android.os.Environment
 import android.os.ParcelFileDescriptor
 import android.provider.MediaStore
 import androidx.exifinterface.media.ExifInterface
+import com.geostamp.camera.address.AddressSource
 import com.geostamp.camera.location.LocationStamp
 import java.io.OutputStream
 import java.text.SimpleDateFormat
@@ -22,7 +23,8 @@ data class PhotoMetadata(
     val writeLocation: Boolean,
     val stamped: Boolean,
     /** Clockwise rotation needed to view the stored pixels upright; null leaves the tag untouched. */
-    val rotationDegrees: Int? = null
+    val rotationDegrees: Int? = null,
+    val addressSource: AddressSource = AddressSource.DETECTED
 )
 
 /** Saves media into the shared Pictures/GeoStamp collection using scoped storage. */
@@ -87,7 +89,7 @@ class MediaStoreWriter(private val resolver: ContentResolver) {
             exif.setAttribute(ExifInterface.TAG_DATETIME, dateTime)
             exif.setAttribute(ExifInterface.TAG_OFFSET_TIME_ORIGINAL, exifOffset(metadata.capturedAtMillis))
             exif.setAttribute(ExifInterface.TAG_SOFTWARE, SOFTWARE)
-            exif.setAttribute(ExifInterface.TAG_USER_COMMENT, if (metadata.stamped) STAMPED_MARKER else ORIGINAL_MARKER)
+            exif.setAttribute(ExifInterface.TAG_USER_COMMENT, userComment(metadata))
             val orientation = if (resetOrientation) ExifInterface.ORIENTATION_NORMAL else metadata.rotationDegrees?.let(::exifOrientation)
             orientation?.let { exif.setAttribute(ExifInterface.TAG_ORIENTATION, it.toString()) }
             val location = metadata.location
@@ -111,6 +113,11 @@ class MediaStoreWriter(private val resolver: ContentResolver) {
         const val STAMPED_MARKER = "GeoStamp:stamped"
         const val ORIGINAL_MARKER = "GeoStamp:original"
         const val ORIGINAL_SUFFIX = "_original"
+        const val MANUAL_ADDRESS_MARKER = ";address=manual"
+
+        fun userComment(metadata: PhotoMetadata): String =
+            (if (metadata.stamped) STAMPED_MARKER else ORIGINAL_MARKER) +
+                if (metadata.stamped && metadata.addressSource == AddressSource.MANUAL) MANUAL_ADDRESS_MARKER else ""
 
         private val GPS_TAGS = listOf(
             ExifInterface.TAG_GPS_LATITUDE, ExifInterface.TAG_GPS_LATITUDE_REF,

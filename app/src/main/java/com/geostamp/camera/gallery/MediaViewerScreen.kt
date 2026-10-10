@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.text.format.DateFormat
 import android.text.format.Formatter
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.EditLocationAlt
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.PlayCircle
@@ -54,6 +56,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.geostamp.camera.R
+import com.geostamp.camera.camera.AddressEditDialog
 import com.geostamp.camera.location.LocationStamp
 import com.geostamp.camera.settings.MapLinkProvider
 import com.geostamp.camera.ui.components.InfoRow
@@ -82,6 +85,17 @@ fun MediaViewerScreen(
     }
     LaunchedEffect(uri) { metadata = viewModel.metadata(uri) }
     var showInfo by remember { mutableStateOf(false) }
+    var editAddress by remember { mutableStateOf(false) }
+    val editedMessage = stringResource(R.string.address_edit_saved)
+    val editFailedMessage = stringResource(R.string.address_edit_failed)
+    LaunchedEffect(state.message) {
+        when (state.message) {
+            is GalleryMessage.AddressEdited -> Toast.makeText(context, editedMessage, Toast.LENGTH_LONG).show()
+            GalleryMessage.AddressEditFailed -> Toast.makeText(context, editFailedMessage, Toast.LENGTH_LONG).show()
+            else -> return@LaunchedEffect
+        }
+        viewModel.consumeMessage()
+    }
     var confirmDelete by remember { mutableStateOf(false) }
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
@@ -158,6 +172,9 @@ fun MediaViewerScreen(
                     context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                 }
             }
+            if (item?.isVideo == false) {
+                ViewerAction(Icons.Outlined.EditLocationAlt, stringResource(R.string.address_edit_title)) { editAddress = true }
+            }
             ViewerAction(Icons.Outlined.Info, stringResource(R.string.action_info)) { showInfo = true }
             ViewerAction(Icons.Outlined.Delete, stringResource(R.string.action_delete)) { confirmDelete = true }
         }
@@ -184,12 +201,43 @@ fun MediaViewerScreen(
                         stringResource(R.string.info_location),
                         metadata?.latitude?.let { String.format(Locale.US, "%.6f, %.6f", it, metadata?.longitude) } ?: notRecorded
                     )
+                    metadata?.addressEnteredManually?.let { manual ->
+                        InfoRow(
+                            stringResource(R.string.info_address_source),
+                            stringResource(if (manual) R.string.info_address_manual else R.string.info_address_detected)
+                        )
+                    }
                     metadata?.altitudeMeters?.let {
                         InfoRow(stringResource(R.string.info_altitude), stringResource(R.string.info_meters, String.format(Locale.US, "%.0f", it)))
                     }
                     metadata?.cameraModel?.let { InfoRow(stringResource(R.string.info_device), it) }
                 }
             }
+        }
+    }
+
+    if (editAddress && item != null) {
+        val source = item.unstampedSource(state.items)
+        if (source == null) {
+            AlertDialog(
+                onDismissRequest = { editAddress = false },
+                title = { Text(stringResource(R.string.address_edit_title)) },
+                text = { Text(stringResource(R.string.address_edit_unavailable)) },
+                confirmButton = { TextButton(onClick = { editAddress = false }) { Text(stringResource(R.string.close)) } }
+            )
+        } else {
+            AddressEditDialog(
+                detected = null,
+                override = null,
+                onSave = { text, _ ->
+                    editAddress = false
+                    viewModel.editAddress(source, text)
+                },
+                onRestoreDetected = {},
+                onDismiss = { editAddress = false },
+                showScope = false,
+                note = stringResource(R.string.address_edit_existing_note)
+            )
         }
     }
 

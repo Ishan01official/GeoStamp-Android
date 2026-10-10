@@ -45,7 +45,9 @@ data class LocationSettings(
     val maxAccuracyMeters: Int = 100,
     val maxAgeSeconds: Int = 120,
     val displayRefresh: LocationDisplayRefresh = LocationDisplayRefresh.STABLE,
-    val compassSmoothing: CompassSmoothing = CompassSmoothing.SMOOTH
+    val compassSmoothing: CompassSmoothing = CompassSmoothing.SMOOTH,
+    /** Off by default: reverse-geocoded house numbers are often wrong even with a good GPS fix. */
+    val showHouseNumbers: Boolean = false
 ) {
     companion object {
         val ACCURACY_CHOICES = listOf(10, 25, 50, 100, 200)
