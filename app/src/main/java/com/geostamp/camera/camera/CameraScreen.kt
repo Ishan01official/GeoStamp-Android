@@ -1,5 +1,13 @@
 package com.geostamp.camera.camera
 
+import com.geostamp.camera.dual.FrameSafeArea
+import com.geostamp.camera.dual.NormalizedRect
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import android.widget.Toast
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -95,14 +103,20 @@ private val LOCATION_PERMISSIONS = arrayOf(
 )
 
 /** Snapshot of the runtime permissions the camera screen depends on. Refreshed on every resume. */
-private data class PermissionSnapshot(val camera: Boolean, val fineLocation: Boolean, val coarseLocation: Boolean) {
+private data class PermissionSnapshot(
+    val camera: Boolean,
+    val fineLocation: Boolean,
+    val coarseLocation: Boolean,
+    val microphone: Boolean = false
+) {
     val locationAccess: LocationAccess get() = PermissionPolicy.locationAccess(fineLocation, coarseLocation)
 }
 
 private fun Context.permissionSnapshot() = PermissionSnapshot(
     camera = hasPermission(Manifest.permission.CAMERA),
     fineLocation = hasPermission(Manifest.permission.ACCESS_FINE_LOCATION),
-    coarseLocation = hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
+    coarseLocation = hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION),
+    microphone = hasPermission(Manifest.permission.RECORD_AUDIO)
 )
 
 @Composable
@@ -138,7 +152,16 @@ fun CameraRoute(
         permissions = context.permissionSnapshot()
         viewModel.onPermissionsChanged()
     }
-    val audioLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    val microphoneBlocked = stringResource(R.string.microphone_permission_needed)
+    val audioLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        permissions = context.permissionSnapshot()
+        if (!granted) {
+            // Recording still works, silently; say so instead of leaving a dead switch.
+            viewModel.setMicrophoneEnabled(false)
+            Toast.makeText(context, microphoneBlocked, Toast.LENGTH_LONG).show()
+        }
+    }
+    val microphoneWanted by viewModel.microphoneEnabled.collectAsStateWithLifecycle()
 
     fun rationale(permission: String) = activity?.let { ActivityCompat.shouldShowRequestPermissionRationale(it, permission) } ?: false
     fun openAppSettings() = context.startActivity(
@@ -182,8 +205,20 @@ fun CameraRoute(
             val ready = permissions.locationAccess == LocationAccess.PRECISE && viewModel.location.value is LocationUpdate.Available
             if (ready) showLocationQr = true else showLocationHelp = true
         },
+        // A muted recording needs no microphone permission, so only ask when sound is wanted.
         onVideoModeSelected = {
-            if (!context.hasPermission(Manifest.permission.RECORD_AUDIO)) audioLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            if (microphoneWanted && !permissions.microphone) audioLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        },
+        microphoneOn = microphoneWanted && permissions.microphone,
+        onToggleMicrophone = {
+            when {
+                microphoneWanted && permissions.microphone -> viewModel.setMicrophoneEnabled(false)
+                permissions.microphone -> viewModel.setMicrophoneEnabled(true)
+                else -> {
+                    viewModel.setMicrophoneEnabled(true)
+                    audioLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                }
+            }
         }
     )
 
@@ -247,7 +282,9 @@ private fun CameraScreen(
     onOpenStampSettings: () -> Unit,
     onOpenMedia: (Uri) -> Unit,
     onLocationChipClick: () -> Unit,
-    onVideoModeSelected: () -> Unit
+    onVideoModeSelected: () -> Unit,
+    microphoneOn: Boolean,
+    onToggleMicrophone: () -> Unit
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -335,6 +372,26 @@ private fun CameraScreen(
         else -> settings.camera.aspectRatio.portraitWidthOverHeight
     }
 
+    // Where controls cover the viewfinder, so the live stamp and the picture-in-picture can stay clear of them.
+    var viewfinderBounds by remember { mutableStateOf<Rect?>(null) }
+    var topBarBottom by remember { mutableFloatStateOf(0f) }
+    var railBounds by remember { mutableStateOf<Rect?>(null) }
+    var controlsTop by remember { mutableFloatStateOf(Float.MAX_VALUE) }
+    var stableControlsTop by remember { mutableFloatStateOf(Float.MAX_VALUE) }
+    val clearance = with(LocalDensity.current) { Dimens.SpaceS.toPx() }
+    LaunchedEffect(viewfinderBounds, topBarBottom, railBounds, controlsTop, stableControlsTop) {
+        val frame = viewfinderBounds ?: return@LaunchedEffect
+        val bar = topBarBottom - frame.top
+        // The rail in frame pixels, padded so nothing sits flush against it.
+        val rail = railBounds?.let {
+            NormalizedRect(it.left - frame.left - clearance, it.top - frame.top - clearance, it.right - frame.left + clearance, it.bottom - frame.top + clearance)
+        }
+        viewModel.onSafeArea(
+            stamp = FrameSafeArea.fromPixels(frame.width, frame.height, bar, frame.bottom - controlsTop + clearance, rail),
+            inset = FrameSafeArea.fromPixels(frame.width, frame.height, bar, frame.bottom - stableControlsTop + clearance, rail)
+        )
+    }
+
     BoxWithConstraints(Modifier.fillMaxSize().background(CameraColors.Background)) {
         // On tall phones the status chips get their own row above the picture instead of covering it,
         // which also moves the preview closer to the controls.
@@ -349,6 +406,7 @@ private fun CameraScreen(
                 .aspectRatio(previewRatio)
                 .align(Alignment.TopCenter)
                 .onSizeChanged { viewModel.onOverlaySize(it.width, it.height) }
+                .onGloballyPositioned { viewfinderBounds = it.boundsInRoot() }
         ) {
             if (capture.mode.isDual()) {
                 DualViewfinder(viewModel, capture.mode, settings.stamp.position)
@@ -398,7 +456,13 @@ private fun CameraScreen(
                 simpleMode = settings.camera.simpleMode,
                 iconRotation = iconRotation,
                 onLocationClick = onLocationChipClick,
-                onOpenSettings = onOpenSettings
+                onOpenSettings = onOpenSettings,
+                microphone = if (capture.mode.isVideoMode()) {
+                    MicrophoneControl(on = microphoneOn, enabled = capture.recordingSeconds == null, onToggle = onToggleMicrophone)
+                } else {
+                    null
+                },
+                modifier = Modifier.onGloballyPositioned { topBarBottom = it.boundsInRoot().bottom }
             )
         }
 
@@ -416,6 +480,7 @@ private fun CameraScreen(
                 .align(Alignment.TopEnd)
                 .statusBarsPadding()
                 .padding(top = if (stacked) TOP_BAR_HEIGHT + Dimens.SpaceM else 64.dp, end = Dimens.SpaceM)
+                .onGloballyPositioned { railBounds = it.boundsInRoot() }
         )
 
         BottomControls(
@@ -435,7 +500,10 @@ private fun CameraScreen(
             iconRotation = iconRotation,
             onOpenGallery = onOpenGallery,
             onVideoModeSelected = onVideoModeSelected,
-            modifier = Modifier.align(Alignment.BottomCenter)
+            onStableTop = { stableControlsTop = it },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .onGloballyPositioned { controlsTop = it.boundsInRoot().top }
         )
 
         // Recording status sits at the top of the picture where nothing overlaps it.
@@ -443,6 +511,7 @@ private fun CameraScreen(
             capture.recordingSeconds,
             VideoLimits.MAX_DURATION_SECONDS,
             capture.recordingHasAudio,
+            muted = capture.recordingMuted,
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .statusBarsPadding()
@@ -517,6 +586,7 @@ private fun BottomControls(
     iconRotation: Float,
     onOpenGallery: () -> Unit,
     onVideoModeSelected: () -> Unit,
+    onStableTop: (Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -535,31 +605,38 @@ private fun BottomControls(
             gpsNotReady && capture.recordingSeconds == null ->
                 CameraChip(stringResource(R.string.gps_not_ready), icon = Icons.Outlined.GpsNotFixed, iconTint = CameraColors.Warning)
         }
-        addressBar?.invoke()
-        if (!simpleMode && !capture.mode.isDual()) {
-            ZoomSelector(presets = zoomPresets, current = zoomRatio, onSelect = viewModel::setZoom)
-        }
-        ModeSelector(
-            mode = capture.mode,
-            enabled = capture.recordingSeconds == null,
-            supportedModes = capture.supportedModes,
-            onSelect = { mode ->
-                if (mode.isVideoMode()) onVideoModeSelected()
-                viewModel.setMode(mode)
+        // The part of the controls that stays put; transient chips above it only move the live stamp.
+        Column(
+            Modifier.onGloballyPositioned { onStableTop(it.boundsInRoot().top) },
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)
+        ) {
+            addressBar?.invoke()
+            if (!simpleMode && !capture.mode.isDual()) {
+                ZoomSelector(presets = zoomPresets, current = zoomRatio, onSelect = viewModel::setZoom)
             }
-        )
-        CaptureRow(
-            mode = capture.mode,
-            isRecording = capture.recordingSeconds != null,
-            countdownActive = capture.countdown != null,
-            isProcessing = capture.isProcessing,
-            thumbnail = capture.lastCapture?.thumbnail,
-            canSwitchCamera = capture.hasFrontCamera && !capture.mode.isDual(),
-            iconRotation = iconRotation,
-            onShutter = viewModel::onShutter,
-            onOpenGallery = onOpenGallery,
-            onSwitchCamera = viewModel::switchLens
-        )
+            ModeSelector(
+                mode = capture.mode,
+                enabled = capture.recordingSeconds == null,
+                supportedModes = capture.supportedModes,
+                onSelect = { mode ->
+                    if (mode.isVideoMode()) onVideoModeSelected()
+                    viewModel.setMode(mode)
+                }
+            )
+            CaptureRow(
+                mode = capture.mode,
+                isRecording = capture.recordingSeconds != null,
+                countdownActive = capture.countdown != null,
+                isProcessing = capture.isProcessing,
+                thumbnail = capture.lastCapture?.thumbnail,
+                canSwitchCamera = capture.hasFrontCamera && !capture.mode.isDual(),
+                iconRotation = iconRotation,
+                onShutter = viewModel::onShutter,
+                onOpenGallery = onOpenGallery,
+                onSwitchCamera = viewModel::switchLens
+            )
+        }
     }
 }
 

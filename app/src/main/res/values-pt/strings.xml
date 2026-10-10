@@ -369,4 +369,15 @@
     <string name="privacy_credits_title">Créditos dos mapas</string>
     <string name="privacy_contact_title">Contato e informações do app</string>
     <string name="privacy_contact_body">%1$s %2$s (%3$s). Em caso de dúvidas sobre privacidade, entre em contato com o desenvolvedor pela página onde você baixou o GeoStamp.</string>
+
+    <!-- Microphone switch and language setting -->
+    <string name="cd_microphone_on">Microfone ligado. Toque duas vezes para silenciar.</string>
+    <string name="cd_microphone_off">Microfone desligado. Toque duas vezes para gravar som.</string>
+    <string name="rec_microphone_off">Microfone desligado</string>
+    <string name="microphone_permission_needed">O acesso ao microfone está desativado, então os vídeos são gravados sem som. Você pode permitir nas configurações do app.</string>
+    <string name="section_language">Idioma</string>
+    <string name="setting_language">Idioma do app</string>
+    <string name="language_system_default">Padrão do sistema</string>
+    <string name="language_note_title">Lugares e endereços</string>
+    <string name="language_note">Mostrados como o serviço de localização do telefone os retorna. Endereços digitados por você nunca são traduzidos.</string>
 </resources>

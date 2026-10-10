@@ -50,7 +50,9 @@ class StampRenderer(
         content: StampContent,
         style: StampStyle,
         map: Bitmap? = null,
-        logo: Bitmap? = null
+        logo: Bitmap? = null,
+        safeTop: Float = 0f,
+        safeBottom: Float = 0f
     ) {
         if (content.isEmpty || width <= 0 || height <= 0) return
         val metrics = Metrics(min(width, height), style.fontScale, content.compact)
@@ -78,9 +80,10 @@ class StampRenderer(
         }
 
         val left = metrics.margin
+        // safeTop and safeBottom are bands covered by on-screen controls; zero for saved photos and videos.
         val top = when (style.position) {
-            StampPosition.BOTTOM -> height - metrics.margin - cardHeight
-            StampPosition.TOP -> metrics.margin
+            StampPosition.BOTTOM -> (height - metrics.margin - safeBottom - cardHeight).coerceAtLeast(metrics.margin + safeTop)
+            StampPosition.TOP -> metrics.margin + safeTop
         }
         val card = RectF(left, top, left + cardWidth, top + cardHeight)
         drawCard(canvas, card, style, metrics)
@@ -153,7 +156,9 @@ class StampRenderer(
                 add(Row(StampIcon.TIME, layout(it, paint(metrics.body, style.textColor, 1f, bold = true), textWidth, 1), isDate = true))
             }
             content.headline?.let {
-                add(Row(StampIcon.PLACE, layout(it, paint(metrics.headline, style.textColor, 1f, bold = true), textWidth, 2), isDate = false))
+                // Full addresses wrap to four lines on cards and two on the compact template; only then is the end trimmed.
+                val lines = if (content.compact) 2 else HEADLINE_MAX_LINES
+                add(Row(StampIcon.PLACE, layout(it, paint(metrics.headline, style.textColor, 1f, bold = true), textWidth, lines), isDate = false))
             }
             content.details.forEach { line ->
                 val alpha = if (line.emphasis == StampLine.Emphasis.PRIMARY) 0.95f else SECONDARY_ALPHA
@@ -304,6 +309,7 @@ class StampRenderer(
         const val SEPARATOR_ALPHA = 0.18f
         const val OUTLINE_ALPHA = 28
         const val QR_MIN_FRACTION = 0.18f
+        const val HEADLINE_MAX_LINES = 4
         val MARKER_COLOR = Color.rgb(26, 115, 232)
     }
 }

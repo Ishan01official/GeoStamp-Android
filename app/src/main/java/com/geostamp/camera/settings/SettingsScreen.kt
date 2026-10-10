@@ -1,5 +1,6 @@
 package com.geostamp.camera.settings
 
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -24,6 +25,8 @@ import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.GpsFixed
 import androidx.compose.material.icons.outlined.Grid3x3
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.Memory
@@ -54,6 +57,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.geostamp.camera.BuildConfig
 import com.geostamp.camera.R
+import com.geostamp.camera.i18n.AppLanguage
 import com.geostamp.camera.stamps.TemperatureUnit
 import com.geostamp.camera.ui.components.ChoiceRow
 import com.geostamp.camera.ui.components.ClickRow
@@ -281,6 +285,28 @@ fun SettingsScreen(
                         onValueChangeFinished = { update { it.copy(storage = it.storage.copy(jpegQuality = quality.roundToInt())) } }
                     )
                     InfoRow(stringResource(R.string.setting_storage_location), stringResource(R.string.setting_storage_location_value), Icons.Outlined.Folder)
+                }
+            }
+            item {
+                SettingsSection(stringResource(R.string.section_language)) {
+                    // Read on each composition: changing the language recreates this screen.
+                    val currentLanguage = remember { AppLanguage.current(context) }
+                    val systemDefault = stringResource(R.string.language_system_default)
+                    ChoiceRow(
+                        title = stringResource(R.string.setting_language),
+                        options = listOf<String?>(null) + AppLanguage.SUPPORTED,
+                        selected = currentLanguage,
+                        label = { tag -> tag?.let(AppLanguage::nativeName) ?: systemDefault },
+                        onSelect = { tag ->
+                            if (tag != currentLanguage) (context as? Activity)?.let { AppLanguage.set(it, tag) }
+                        },
+                        icon = Icons.Outlined.Language
+                    )
+                    InfoRow(
+                        stringResource(R.string.language_note_title),
+                        stringResource(R.string.language_note),
+                        Icons.Outlined.Translate
+                    )
                 }
             }
             item {

@@ -12,8 +12,8 @@ android {
         applicationId = "com.geostamp.camera"
         minSdk = 29
         targetSdk = 35
-        versionCode = 4
-        versionName = "0.4.0"
+        versionCode = 5
+        versionName = "0.5.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -31,6 +31,13 @@ android {
 
     testOptions {
         unitTests.isReturnDefaultValues = true
+    }
+
+    // The in-app language picker needs every translation on the device, so App Bundles keep them all.
+    bundle {
+        language {
+            enableSplit = false
+        }
     }
 }
 

@@ -6,11 +6,15 @@ import android.graphics.BitmapFactory
 import android.graphics.drawable.Drawable
 import androidx.core.content.ContextCompat
 import com.geostamp.camera.R
+import com.geostamp.camera.i18n.AppLanguage
 import com.geostamp.camera.sensors.HeadingLabels
 import java.io.File
 
 /** Android resources for the stamp engine: localized labels, icons and the user's logo. */
-class StampResources(private val context: Context) {
+class StampResources(private val appContext: Context) {
+    /** Follows a language chosen in GeoStamp's settings, also on Android versions without per-app languages. */
+    private val context: Context get() = AppLanguage.wrap(appContext)
+
     fun labels(): StampLabels {
         val res = context.resources
         return StampLabels(

@@ -1,6 +1,8 @@
 package com.geostamp.camera
 
+import android.content.Context
 import android.os.Bundle
+import com.geostamp.camera.i18n.AppLanguage
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -18,6 +20,11 @@ import com.geostamp.camera.ui.theme.isDarkTheme
 /** Single-activity Compose host. Screens, camera and stamping logic live in their own packages. */
 class MainActivity : ComponentActivity() {
     private val settingsViewModel: SettingsViewModel by viewModels()
+
+    /** Applies a language chosen in GeoStamp's settings on Android 12 and earlier; a no-op on 13+. */
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLanguage.wrap(newBase))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()

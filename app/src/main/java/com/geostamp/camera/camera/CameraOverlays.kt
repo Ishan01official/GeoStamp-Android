@@ -26,6 +26,7 @@ import androidx.compose.material.icons.outlined.GpsFixed
 import androidx.compose.material.icons.outlined.GpsNotFixed
 import androidx.compose.material.icons.outlined.GpsOff
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.MicOff
 import androidx.compose.material.icons.outlined.Navigation
 import androidx.compose.material.icons.outlined.Settings
@@ -75,21 +76,43 @@ fun TopOverlay(
     iconRotation: Float,
     onLocationClick: () -> Unit,
     onOpenSettings: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    microphone: MicrophoneControl? = null
 ) {
-    Box(modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS)) {
-        GpsChip(location, maxAccuracyMeters, simpleMode, onLocationClick, Modifier.align(Alignment.CenterStart))
-        if (!simpleMode) HeadingChip(heading, hasCompass, Modifier.align(Alignment.Center))
-        Row(Modifier.align(Alignment.CenterEnd), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
-            CameraIconButton(
-                icon = Icons.Outlined.Settings,
-                contentDescription = stringResource(R.string.cd_settings),
-                onClick = onOpenSettings,
-                rotation = iconRotation,
-                size = 36.dp
-            )
+    // One row with a flexible middle, so the heading chip shrinks instead of colliding with its neighbours.
+    Row(
+        modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)
+    ) {
+        microphone?.let { MicrophoneButton(it, iconRotation) }
+        GpsChip(location, maxAccuracyMeters, simpleMode, onLocationClick, Modifier)
+        Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+            if (!simpleMode) HeadingChip(heading, hasCompass, Modifier)
         }
+        CameraIconButton(
+            icon = Icons.Outlined.Settings,
+            contentDescription = stringResource(R.string.cd_settings),
+            onClick = onOpenSettings,
+            rotation = iconRotation,
+            size = 36.dp
+        )
     }
+}
+
+/** State of the Video and Dual Video microphone switch. [on] is what the next recording will actually do. */
+data class MicrophoneControl(val on: Boolean, val enabled: Boolean, val onToggle: () -> Unit)
+
+@Composable
+private fun MicrophoneButton(control: MicrophoneControl, iconRotation: Float) {
+    CameraIconButton(
+        icon = if (control.on) Icons.Outlined.Mic else Icons.Outlined.MicOff,
+        contentDescription = stringResource(if (control.on) R.string.cd_microphone_on else R.string.cd_microphone_off),
+        onClick = control.onToggle,
+        rotation = iconRotation,
+        enabled = control.enabled,
+        size = 36.dp
+    )
 }
 
 @Composable
@@ -214,7 +237,7 @@ fun CountdownOverlay(seconds: Int?, modifier: Modifier = Modifier) {
 
 /** Large, high-contrast recording status: elapsed time, the one-minute limit, and a warning near the end. */
 @Composable
-fun RecordingBadge(seconds: Long?, limitSeconds: Long, hasAudio: Boolean, modifier: Modifier = Modifier) {
+fun RecordingBadge(seconds: Long?, limitSeconds: Long, hasAudio: Boolean, modifier: Modifier = Modifier, muted: Boolean = false) {
     if (seconds == null) return
     val remaining = (limitSeconds - seconds).coerceAtLeast(0)
     val status = stringResource(R.string.rec_status, formatClock(seconds), formatClock(limitSeconds))
@@ -244,6 +267,7 @@ fun RecordingBadge(seconds: Long?, limitSeconds: Long, hasAudio: Boolean, modifi
         when {
             remaining <= RECORDING_WARNING_SECONDS ->
                 CameraChip(stringResource(R.string.rec_seconds_left, remaining.toInt()), iconTint = CameraColors.Warning)
+            muted -> CameraChip(stringResource(R.string.rec_microphone_off), icon = Icons.Outlined.MicOff)
             !hasAudio -> CameraChip(stringResource(R.string.rec_no_audio), icon = Icons.Outlined.MicOff)
         }
     }

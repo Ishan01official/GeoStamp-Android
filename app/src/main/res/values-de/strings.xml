@@ -365,4 +365,15 @@
     <string name="privacy_credits_title">Kartennachweise</string>
     <string name="privacy_contact_title">Kontakt und App-Informationen</string>
     <string name="privacy_contact_body">%1$s %2$s (%3$s). Bei Fragen zum Datenschutz wende dich über die Seite, von der du GeoStamp heruntergeladen hast, an den Entwickler.</string>
+
+    <!-- Microphone switch and language setting -->
+    <string name="cd_microphone_on">Mikrofon an. Zum Stummschalten zweimal tippen.</string>
+    <string name="cd_microphone_off">Mikrofon aus. Zum Aufnehmen von Ton zweimal tippen.</string>
+    <string name="rec_microphone_off">Mikrofon aus</string>
+    <string name="microphone_permission_needed">Der Mikrofonzugriff ist aus, daher werden Videos ohne Ton aufgenommen. Du kannst ihn in den App-Einstellungen erlauben.</string>
+    <string name="section_language">Sprache</string>
+    <string name="setting_language">App-Sprache</string>
+    <string name="language_system_default">Systemstandard</string>
+    <string name="language_note_title">Orte und Adressen</string>
+    <string name="language_note">Werden so angezeigt, wie der Standortdienst deines Telefons sie liefert. Selbst eingegebene Adressen werden nie übersetzt.</string>
 </resources>

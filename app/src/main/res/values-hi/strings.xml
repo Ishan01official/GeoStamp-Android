@@ -374,4 +374,15 @@
     <string name="privacy_credits_title">मैप स्रोत</string>
     <string name="privacy_contact_title">संपर्क और ऐप की जानकारी</string>
     <string name="privacy_contact_body">%1$s %2$s (%3$s)। निजता से जुड़े सवालों के लिए, जिस पेज से आपने GeoStamp डाउनलोड किया था, वहां से डेवलपर से संपर्क करें।</string>
+
+    <!-- Microphone switch and language setting -->
+    <string name="cd_microphone_on">माइक्रोफ़ोन चालू। म्यूट करने के लिए दो बार टैप करें।</string>
+    <string name="cd_microphone_off">माइक्रोफ़ोन बंद। आवाज़ रिकॉर्ड करने के लिए दो बार टैप करें।</string>
+    <string name="rec_microphone_off">माइक्रोफ़ोन बंद</string>
+    <string name="microphone_permission_needed">माइक्रोफ़ोन की अनुमति बंद है, इसलिए वीडियो बिना आवाज़ के रिकॉर्ड होंगे। आप ऐप सेटिंग में इसकी अनुमति दे सकते हैं।</string>
+    <string name="section_language">भाषा</string>
+    <string name="setting_language">ऐप की भाषा</string>
+    <string name="language_system_default">सिस्टम डिफ़ॉल्ट</string>
+    <string name="language_note_title">जगहें और पते</string>
+    <string name="language_note">ये वैसे ही दिखते हैं जैसे आपके फ़ोन की लोकेशन सेवा देती है। आपके लिखे पते कभी अनुवादित नहीं होते।</string>
 </resources>

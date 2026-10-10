@@ -388,4 +388,15 @@
     <string name="privacy_credits_body" translatable="false">Map data © OpenStreetMap contributors, available under the Open Database License (ODbL).\n\nTerrain: © OpenTopoMap (CC-BY-SA), with elevation data from SRTM.\n\nSatellite: EOxCloudless https://cloudless.eox.at by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2023), licensed CC BY-NC-SA 4.0 for non-commercial use.</string>
     <string name="privacy_contact_title">Contact and app information</string>
     <string name="privacy_contact_body">%1$s %2$s (%3$s). For privacy questions, contact the developer through the page where you downloaded GeoStamp.</string>
+
+    <!-- Microphone switch and language setting -->
+    <string name="cd_microphone_on">Microphone on. Double tap to mute.</string>
+    <string name="cd_microphone_off">Microphone off. Double tap to record sound.</string>
+    <string name="rec_microphone_off">Microphone off</string>
+    <string name="microphone_permission_needed">Microphone access is off, so videos are recorded without sound. You can allow it in app settings.</string>
+    <string name="section_language">Language</string>
+    <string name="setting_language">App language</string>
+    <string name="language_system_default">System default</string>
+    <string name="language_note_title">Places and addresses</string>
+    <string name="language_note">Shown as your phone\'s location service returns them. Addresses you type are never translated.</string>
 </resources>

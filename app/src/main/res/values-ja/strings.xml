@@ -361,4 +361,15 @@
     <string name="privacy_credits_title">地図のクレジット</string>
     <string name="privacy_contact_title">お問い合わせとアプリ情報</string>
     <string name="privacy_contact_body">%1$s %2$s(%3$s)。プライバシーに関するお問い合わせは、GeoStampをダウンロードしたページから開発者にご連絡ください。</string>
+
+    <!-- Microphone switch and language setting -->
+    <string name="cd_microphone_on">マイクオン。ダブルタップでミュート。</string>
+    <string name="cd_microphone_off">マイクオフ。ダブルタップで音声を録音。</string>
+    <string name="rec_microphone_off">マイクオフ</string>
+    <string name="microphone_permission_needed">マイクへのアクセスがオフのため、動画は音声なしで録画されます。アプリの設定で許可できます。</string>
+    <string name="section_language">言語</string>
+    <string name="setting_language">アプリの言語</string>
+    <string name="language_system_default">システムのデフォルト</string>
+    <string name="language_note_title">場所と住所</string>
+    <string name="language_note">スマートフォンの位置情報サービスから返されたとおりに表示されます。手入力した住所は翻訳されません。</string>
 </resources>

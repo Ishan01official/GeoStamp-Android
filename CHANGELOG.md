@@ -3,6 +3,15 @@
 This file describes source changes. Version names match `app/build.gradle.kts`;
 entries do not imply that a signed release was published.
 
+## 0.5.0 — 2026-10-11
+
+- Dual Video now matches Dual Photo: the front-camera window gets the same rounded white frame on screen and in the saved video, a smaller default size and the same margins, without stretching.
+- The live stamp, the address bar and the picture-in-picture stay clear of the status chips, side rail, mode selector and shutter, measured from the actual layout on each phone. Saved photos and videos keep the stamp at the frame edge.
+- Add a microphone on/off switch to Video and Dual Video. Muted recordings need no microphone permission and are labelled "Microphone off" while recording.
+- Add Settings > Language with System default, English and every translated language.
+- Show complete addresses: up to four lines on the stamp and two in the address bar, with the edit button beside the text.
+- Fix a black screen when opening a new capture with "View" after the gallery had been opened.
+
 ## 0.4.0 — 2026-10-10
 
 - Add a Map type setting (Normal, Satellite, Terrain, Hybrid) for stamp thumbnails, with keyless providers, per-provider caches and a fallback to Normal and then to the coordinate panel.

@@ -113,7 +113,8 @@ fun MediaViewerScreen(
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
 
-    LaunchedEffect(Unit) { if (state.items.isEmpty()) viewModel.refresh() }
+    // Opened from the camera's "View", the new capture may not be in the list yet; without it nothing is drawn.
+    LaunchedEffect(uri) { viewModel.ensureLoaded(uri) }
 
     Box(Modifier.fillMaxSize().background(CameraColors.Background)) {
         if (item?.isVideo == true) {

@@ -381,4 +381,15 @@
     <string name="privacy_credits_title">مصادر الخرائط</string>
     <string name="privacy_contact_title">التواصل ومعلومات التطبيق</string>
     <string name="privacy_contact_body">%1$s %2$s (%3$s). للاستفسار عن الخصوصية، تواصل مع المطوّر عبر الصفحة التي نزّلت منها GeoStamp.</string>
+
+    <!-- Microphone switch and language setting -->
+    <string name="cd_microphone_on">الميكروفون مفعّل. انقر مرتين لكتم الصوت.</string>
+    <string name="cd_microphone_off">الميكروفون متوقف. انقر مرتين لتسجيل الصوت.</string>
+    <string name="rec_microphone_off">الميكروفون متوقف</string>
+    <string name="microphone_permission_needed">الوصول إلى الميكروفون متوقف، لذا تُسجَّل الفيديوهات دون صوت. يمكنك السماح به من إعدادات التطبيق.</string>
+    <string name="section_language">اللغة</string>
+    <string name="setting_language">لغة التطبيق</string>
+    <string name="language_system_default">لغة النظام</string>
+    <string name="language_note_title">الأماكن والعناوين</string>
+    <string name="language_note">تُعرض كما تعيدها خدمة الموقع في هاتفك. لا تُترجم العناوين التي تكتبها أبدًا.</string>
 </resources>

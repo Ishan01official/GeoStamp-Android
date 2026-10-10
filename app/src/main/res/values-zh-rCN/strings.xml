@@ -361,4 +361,15 @@
     <string name="privacy_credits_title">地图来源</string>
     <string name="privacy_contact_title">联系方式和应用信息</string>
     <string name="privacy_contact_body">%1$s %2$s（%3$s）。如有隐私方面的问题，请通过您下载 GeoStamp 的页面联系开发者。</string>
+
+    <!-- Microphone switch and language setting -->
+    <string name="cd_microphone_on">麦克风已开启。点按两次即可静音。</string>
+    <string name="cd_microphone_off">麦克风已关闭。点按两次即可录制声音。</string>
+    <string name="rec_microphone_off">麦克风已关闭</string>
+    <string name="microphone_permission_needed">麦克风权限已关闭，因此视频将无声录制。您可以在应用设置中允许。</string>
+    <string name="section_language">语言</string>
+    <string name="setting_language">应用语言</string>
+    <string name="language_system_default">系统默认</string>
+    <string name="language_note_title">地点和地址</string>
+    <string name="language_note">按手机定位服务返回的原样显示。您输入的地址绝不会被翻译。</string>
 </resources>
