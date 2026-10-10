@@ -1,44 +1,53 @@
 # Development roadmap
 
-Current implementation status (2026-10-10): detailed address formatting, selectable
-detail levels, map thumbnails, stamped video, templates and manual address editing
-are implemented. Address lookup and map thumbnails now default on; weather remains
-off. Saved service choices and optional location permission are preserved. The
-milestones below retain outstanding device and release work.
+Updated: 2026-10-10. Checkmarks mean implemented in source; device coverage and
+release readiness are tracked separately in [current progress](progress-report.md).
 
-## Milestone 1 — source baseline
-- [x] Android Gradle project and permissions
-- [x] CameraX preview and JPEG capture code
-- [x] Optional foreground location and visible GPS timestamp
-- [x] Local MediaStore saving
-- [x] Compile with Android SDK 35
-- [x] Initial physical-device install, launch, preview and capture validation
+## Camera and capture
 
-## Milestone 2 — reliable MVP
-- [x] Camera controls: switch, flash modes, focus, zoom, exposure, grid, timer
-- [x] Aspect ratio and requested resolution presets
-- [x] Last photo thumbnail preview
-- [x] Capture rotation handling for stamped bitmap output
-- [x] Capture-time location freshness and accuracy threshold
-- [x] Handle permission denial and disabled GPS
-- [x] Initial real-device stamped capture test
-- [x] Optional unmodified original
-- [ ] Camera rotation, EXIF orientation, lifecycle and memory tests
-- [x] Automated unit tests and CI build workflow
+- [x] Android 10+ project, CameraX preview and local MediaStore saving
+- [x] Front/rear switching, flash, focus, zoom, exposure, grid and timer
+- [x] Photo aspect ratio and requested resolution presets
+- [x] JPEG rotation, configurable stamping, optional original and GPS EXIF controls
+- [x] Stamped video up to 60 seconds with audio/orientation verification and fallback
+- [x] Dual Photo / Dual Video on concurrent-camera hardware
+- [x] Movable/resizable dual inset and capability diagnostics
+- [ ] Broader front/rear, flash, timer, resolution, lifecycle and memory device tests
+- [ ] Process-death and background-stamping hardening
+- [ ] Additional concurrent-camera devices and unsupported-device validation
 
-## Milestone 3 — GPS and sensors
-- [x] Foreground GPS/network location updates
-- [x] Provider status, stale location, approximate location and weak accuracy states
-- [x] OpenStreetMap and Google Maps link helpers
-- [x] Compass sensor integration with calibration status
-- [x] Magnetic heading with true-heading correction when location is available
-- [x] Initial real-device GPS and compass display test
-- [x] Complete provider addresses with Detailed / Standard / Short formatting; lookup enabled by default
-- [ ] Expose map links in the UI
-- [ ] Physical-device validation for approximate location, weak signal and provider-disabled states
+## Location, addresses and environment
 
-## Milestone 4 — stamp customization
-- [x] Switchable address geocoding enabled by default
-- [x] Compass and customizable templates
-- [x] Switchable map thumbnail enabled by default; opt-in weather
-- [ ] Privacy policy, store listing and release testing
+- [x] Optional foreground precise/approximate location and freshness/accuracy states
+- [x] Compass heading, true/magnetic/course labels and no-compass fallback
+- [x] Complete provider addresses with Detailed / Standard / Short formatting
+- [x] Stabilization, component caching and manual address correction
+- [x] Individually switchable address lookup and map thumbnails, enabled by default
+- [x] Opt-in weather, provider disclosure, map attribution and offline fallback
+- [x] Google Maps/OpenStreetMap links in the photo viewer when GPS metadata is available
+- [ ] Approximate-only, weak-signal, provider-disabled and walking device tests
+- [ ] External heading validation and hardware without a magnetometer
+- [ ] Broader map/weather device and network-failure coverage
+
+## Gallery, stamps and interface
+
+- [x] Four stamp templates, per-template fields, position, size, color and opacity
+- [x] Date/coordinate formats, custom text and logo selection
+- [x] Gallery filters, full-screen viewer, share, delete, metadata and batch stamping
+- [x] Video player with seeking, mute and full screen
+- [x] Compose/Material 3, system/light/dark theme and Simple Camera Mode
+- [x] English/Hindi, TalkBack labels and large touch targets
+- [ ] Batch stamping, deletion-consent and manual re-stamping device review
+- [ ] Full accessibility, landscape and varied screen-size review
+- [ ] General photo import through Photo Picker (logo selection already uses it)
+
+## Verification and release
+
+- [x] Gradle wrapper, JVM tests, instrumented photo/address/video pipeline tests
+- [x] CI build, unit tests, lint, wrapper validation and debug APK artifact
+- [x] A142 physical-device reports and source privacy documentation
+- [ ] Confirm remote CI for the published change
+- [ ] Performance, battery, emulator and broader physical-device matrix
+- [ ] Release signing and signed Android App Bundle
+- [ ] Store screenshots, feature graphic, descriptions and Data Safety review
+- [ ] Internal/closed testing and final release/privacy review

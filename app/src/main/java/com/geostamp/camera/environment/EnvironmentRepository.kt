@@ -24,7 +24,7 @@ data class EnvironmentSnapshot(
 )
 
 /**
- * Prefetches opt-in online data in the background so the shutter never waits for the network.
+ * Prefetches enabled online data in the background so the shutter never waits for the network.
  * Values are discarded at capture time if they were fetched for a different place.
  */
 class EnvironmentRepository(

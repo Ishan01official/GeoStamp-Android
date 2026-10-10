@@ -1,6 +1,6 @@
 package com.geostamp.camera.stamps
 
-/** User-facing stamp configuration. Online-only fields stay opt-in through [com.geostamp.camera.settings.OnlineServices]. */
+/** User-facing stamp configuration. Online-only fields depend on settings in [com.geostamp.camera.settings.OnlineServices]. */
 data class StampPreferences(
     val enabled: Boolean = true,
     val template: StampTemplate = StampTemplate.MAP_CARD,

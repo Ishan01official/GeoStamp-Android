@@ -2,7 +2,7 @@
 
 ## Root cause
 
-Compared current HEAD `761e00a`, regression commit `2e5910e`, and its parent.
+Compared the pre-fix baseline `761e00a`, regression commit `2e5910e`, and its parent.
 Before `2e5910e`, `AddressResolver` preferred `getAddressLine(0)`, then fell back
 to locality, state and country. The regression replaced that with a restricted
 component parser, discarding all provider address lines and `featureName`.

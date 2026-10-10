@@ -1,5 +1,7 @@
 # GeoStamp privacy
 
+Updated: 2026-10-10. Describes the current source implementation.
+
 GeoStamp has no advertising, analytics, crash reporting or account SDKs. Photos and videos are processed on the device and saved to `Pictures/GeoStamp` and `Movies/GeoStamp`. Nothing is uploaded automatically, and app data is excluded from cloud backup and device transfer.
 
 ## Permissions
@@ -28,7 +30,7 @@ Results are prefetched asynchronously while the camera is in use and only used f
 
 ## Metadata
 
-- Visible stamps can include precise coordinates and time. Review photos before sharing.
+- Visible stamps can include precise coordinates, addresses and time. Review photos and videos before sharing.
 - Writing GPS coordinates into EXIF metadata is a separate setting and is **off** by default. When it is off, GeoStamp removes GPS tags from the photos it saves.
 - "Keep unstamped original" saves a second, unstamped copy. It follows the same EXIF setting.
 
@@ -40,3 +42,15 @@ This document describes the source implementation; it is not an independent secu
 - A typed address is held in memory only, for the next capture or until the app closes. It is never sent anywhere. Photos with a typed address are marked as such in their EXIF comment.
 - The Camera diagnostics report stays on the phone unless you choose Share.
 
+
+## User-initiated sharing and map links
+
+Sharing sends only the selected media or diagnostics report through Android's
+share sheet to the destination you choose. Opening a saved photo in Google Maps
+or OpenStreetMap passes its recorded coordinates to that destination. The map
+button is available only when the photo has GPS metadata; GPS EXIF writing is
+separate from the visible stamp and remains off by default.
+
+Custom logos are selected through Android Photo Picker for local stamp rendering.
+Deleting an item uses MediaStore and requests Android's deletion consent when
+required. Stored preferences are kept locally in DataStore.

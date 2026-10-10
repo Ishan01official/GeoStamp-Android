@@ -4,7 +4,7 @@ import java.io.ByteArrayOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 
-/** Minimal HTTPS GET used only by opt-in services. Never called for offline capture. */
+/** Minimal HTTPS GET used only by enabled online services. Never called for offline capture. */
 internal object HttpClient {
     private const val USER_AGENT = "GeoStamp-Android/0.3 (+https://github.com/Ishan01official/GeoStamp-Android)"
     private const val TIMEOUT_MILLIS = 6_000

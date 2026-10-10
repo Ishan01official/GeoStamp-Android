@@ -1,6 +1,8 @@
 # Approved GeoStamp feature scope — 2026-10-09
 
 This document is a **requirements register**, not a claim that all items are implemented.
+Last revised: 2026-10-10. See [current progress](progress-report.md) for implementation
+and verification, and [roadmap](roadmap.md) for outstanding work.
 
 ## Camera
 - Photo capture; front/rear cameras; flash; focus and zoom; photo resolution

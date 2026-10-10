@@ -4,7 +4,7 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <!-- Used only by opt-in features: address lookup, map thumbnails and weather. Off by default. -->
+    <!-- Address lookup and map thumbnails default on; weather is opt-in. All are switchable. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
     <uses-feature android:name="android.hardware.camera" android:required="true" />

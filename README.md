@@ -2,7 +2,7 @@
 
 A privacy-first, ad-free GPS camera for Android. Photos and videos carry a stamp with the date, time, place and coordinates, and the camera works fully offline.
 
-## Features (v0.3.0)
+## Features (source v0.3.0)
 
 - **Stamped video.** Videos record for up to 60 seconds and then get the same stamp as photos, burned into every frame. The clock ticks each second. Audio, orientation and length are kept, and the result is checked before it reaches the gallery. If stamping fails, the video is still saved and clearly marked as unstamped.
 - **In-app video player** with play/pause, 10-second skips, a seek bar, mute and full screen.
@@ -28,24 +28,55 @@ Detailed address formatting is the default, with Standard and Short available.
 
 ## Current verification status
 
-Address completeness and service defaults are implemented locally. The address
+Address completeness and service defaults are implemented in the current source. The address
 change passed 113 unit tests and eight physical-device tests, including live
 geocoding for both supplied coordinates and the photo/video pipelines. See the
 [address verification report](docs/address-detail-verification-2026-10-10.md) and
 [current progress](docs/progress-report.md#current-status--address-detail-and-service-defaults).
-The default-service change passes all 115 unit tests, APK build and lint (zero
+The recorded default-service verification passed all 115 unit tests, APK build and lint (zero
 errors; 20 dependency-version warnings), including enabled defaults and saved
-opt-outs. The updated APK is installed on the connected phone. These changes are
-committed locally; they have not been pushed or published as a release.
+opt-outs. The updated APK was installed on the test phone. These changes are
+included in the current source. Device evidence describes the recorded test runs;
+release publication and broader device coverage are tracked separately.
 
-## Build
+## Build and install
 
-Requires JDK 17 and Android SDK 35. Runs on Android 10 and newer.
+Requires JDK 17, Android SDK Platform 35 and Build Tools 35.0.0. Runs on Android
+10 (API 29) and newer. The repository includes the Gradle 8.9 wrapper.
 
 ```bash
-./gradlew clean assembleDebug testDebugUnitTest lintDebug
+git clone https://github.com/Ishan01official/GeoStamp-Android.git
+cd GeoStamp-Android
 ```
 
-The on-device video stamping test needs input clips in the app's `files/verify` folder. See `app/src/androidTest/.../VideoStampPipelineTest.kt`.
+Open the project in Android Studio and configure your SDK, or set
+`ANDROID_HOME` to its location. Then run:
 
-See [privacy](PRIVACY.md), [roadmap](docs/roadmap.md), the [address verification report](docs/address-detail-verification-2026-10-10.md) and the [v0.3.0 device test report](docs/physical-test-report-2026-10-10-v0.3.md).
+```bash
+./gradlew --no-daemon assembleDebug testDebugUnitTest lintDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+`adb install -r` requires a connected device and preserves existing app data when
+signatures match. Build output is a debug APK, not a signed store release.
+See [contribution and test setup](CONTRIBUTING.md) for device-test fixtures.
+
+## Known limitations
+
+- Dual Capture depends on real concurrent front/rear camera support.
+- Platform geocoding can omit details or return an incorrect house number; manual
+  correction is available. Detailed formatting preserves the provider's response.
+- If Android kills the app during video stamping, recovery saves the recording
+  unstamped at the next launch.
+- A phone lying flat may record in landscape. Diagnostics remain in English.
+- Approximate-only location, disabled providers, no-compass hardware and additional
+  devices still need the checks listed in the roadmap.
+
+## Documentation
+
+- [Documentation index](docs/README.md)
+- [Privacy and third-party services](PRIVACY.md)
+- [Current progress and verification](docs/progress-report.md)
+- [Remaining work](docs/roadmap.md)
+- [Change history](CHANGELOG.md)
+- [Contributing and running tests](CONTRIBUTING.md)
