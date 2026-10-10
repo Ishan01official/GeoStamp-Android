@@ -46,8 +46,21 @@ class StampContentBuilderTest {
         val content = builder.build(StampData(capturedAtMillis = 0L, location = location), prefs, mapAvailable = false)
 
         assertNull(content.headline)
-        assertFalse(content.showMap)
+        assertEquals(MapPanel.COORDINATES, content.mapPanel)
         assertEquals(listOf("29.007953, 77.767663", "GPS ±5 m", "Alt 220 m · 5.4 km/h"), content.details.map { it.text })
+    }
+
+    @Test
+    fun mapCardWithoutTileShowsCoordinatePanelInsteadOfFakeMap() {
+        val content = builder.build(StampData(0L, location = location), StampPreferences(template = StampTemplate.MAP_CARD), mapAvailable = false)
+        assertEquals(MapPanel.COORDINATES, content.mapPanel)
+        assertEquals(listOf("29.00795° N", "77.76766° E"), content.panelCoordinates)
+    }
+
+    @Test
+    fun mapCardWithTileShowsRealMap() {
+        val content = builder.build(StampData(0L, location = location), StampPreferences(template = StampTemplate.MAP_CARD), mapAvailable = true)
+        assertEquals(MapPanel.TILE, content.mapPanel)
     }
 
     @Test

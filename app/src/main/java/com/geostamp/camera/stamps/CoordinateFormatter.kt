@@ -10,6 +10,12 @@ object CoordinateFormatter {
             CoordinateFormat.DMS -> "${toDms(latitude, 'N', 'S')}  ${toDms(longitude, 'E', 'W')}"
         }
 
+    /** Two short lines for the coordinate panel shown when no map tile is available. */
+    fun panelLines(latitude: Double, longitude: Double): List<String> = listOf(
+        String.format(Locale.US, "%.5f° %c", abs(latitude), if (latitude >= 0) 'N' else 'S'),
+        String.format(Locale.US, "%.5f° %c", abs(longitude), if (longitude >= 0) 'E' else 'W')
+    )
+
     fun toDms(value: Double, positive: Char, negative: Char): String {
         val hemisphere = if (value >= 0) positive else negative
         val totalSeconds = Math.round(abs(value) * 36_000.0) / 10.0

@@ -36,9 +36,14 @@ class StampContentBuilder(
             dateTime = if (fields.dateTime) formatDate(data.capturedAtMillis, preferences.dateFormat) else null,
             headline = data.address?.trim()?.takeIf { fields.address && it.isNotEmpty() },
             details = details,
-            showMap = fields.map && mapAvailable && data.location != null,
+            mapPanel = when {
+                !fields.map || data.location == null -> MapPanel.NONE
+                mapAvailable -> MapPanel.TILE
+                else -> MapPanel.COORDINATES
+            },
             showLogo = fields.logo && logoAvailable,
-            compact = preferences.template.compact
+            compact = preferences.template.compact,
+            panelCoordinates = data.location?.let { CoordinateFormatter.panelLines(it.latitude, it.longitude) }.orEmpty()
         )
     }
 
@@ -105,6 +110,6 @@ class StampContentBuilder(
         const val SEPARATOR = " · "
         private const val METERS_PER_SECOND_TO_KMH = 3.6
         private const val STATIONARY_SPEED_KMH = 1.0
-        private val EMPTY = StampContent(null, null, emptyList(), showMap = false, showLogo = false, compact = true)
+        private val EMPTY = StampContent(null, null, emptyList(), mapPanel = MapPanel.NONE, showLogo = false, compact = true)
     }
 }
