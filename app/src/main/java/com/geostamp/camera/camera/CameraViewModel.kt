@@ -120,9 +120,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     val session = CameraSession(application)
 
     /** Simultaneous front + rear capture, used only where the hardware supports it. */
-    val dual = DualCaptureController(DualCameraSession(application), container.photoProcessor) {
-        container.cameraCapabilityRepository.capabilities()
-    }
+    val dual = DualCaptureController(DualCameraSession(application), container.photoProcessor)
 
     /** Post-recording stamping progress, shared with the app-wide video coordinator. */
     val videoJob: StateFlow<VideoJobState> = container.videoCapture.state

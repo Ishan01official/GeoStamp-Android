@@ -4,9 +4,9 @@ package com.geostamp.camera.dual
 data class NdcPlacement(val scaleX: Float, val scaleY: Float, val offsetX: Float, val offsetY: Float)
 
 /**
- * CameraX composes the two camera streams in the primary sensor's buffer orientation, and only then
- * rotates the result for display and recording. An inset placed on the upright portrait screen must
- * therefore be mapped back into buffer coordinates.
+ * Converts an inset rectangle into CameraX composition values. CameraX 1.5 was measured to interpret
+ * composition in upright display coordinates (rotation 0); other rotations are kept for devices or
+ * versions that compose in sensor-buffer orientation.
  */
 object CompositionMapping {
     /**
