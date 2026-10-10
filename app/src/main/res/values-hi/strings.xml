@@ -35,7 +35,7 @@
     <string name="resolution_high">अधिकतम</string>
     <string name="gps_searching">खोज रहा है</string>
     <string name="gps_off">GPS नहीं</string>
-    <string name="gps_denied">लोकेशन बंद</string>
+    <string name="gps_denied">जगह बंद</string>
     <string name="gps_accuracy">±%d मी</string>
     <string name="gps_stale">पुराना फ़िक्स</string>
     <string name="gps_ready">लोकेशन तैयार</string>
@@ -43,8 +43,6 @@
     <string name="gps_unavailable">लोकेशन उपलब्ध नहीं</string>
     <string name="compass_unavailable">कम्पास नहीं</string>
     <string name="compass_calibrate">कैलिब्रेट करें</string>
-    <string name="permission_camera_title">कैमरा अनुमति चाहिए</string>
-    <string name="permission_camera_body">फ़ोटो लेने के लिए GeoStamp को कैमरा चाहिए। जब तक आप ऑनलाइन सुविधाएँ चालू नहीं करते, कुछ भी आपके फ़ोन से बाहर नहीं जाता।</string>
     <string name="permission_grant">कैमरा की अनुमति दें</string>
     <string name="permission_open_settings">ऐप सेटिंग्स खोलें</string>
     <string name="saved_photo">फ़ोटो सहेजी गई</string>
@@ -255,4 +253,25 @@
         <item quantity="one">%d फ़ोटो पर स्टैम्प लगाया गया</item>
         <item quantity="other">%d फ़ोटो पर स्टैम्प लगाया गया</item>
     </plurals>
+    <string name="intro_title">GeoStamp एक कैमरा ऐप है</string>
+    <string name="intro_body">यह फ़ोटो और वीडियो पर तारीख, समय और जगह लिख देता है। शुरू करने के लिए कैमरे की अनुमति दें। फ़ोटो आपके फ़ोन पर ही रहती हैं।</string>
+    <string name="intro_camera_blocked">GeoStamp के लिए कैमरा अनुमति बंद है। ऐप सेटिंग खोलें, अनुमतियाँ चुनें और कैमरा की अनुमति दें।</string>
+    <string name="location_offer_title">फ़ोटो में जगह जोड़ें?</string>
+    <string name="location_offer_body">जगह की अनुमति वैकल्पिक है। इससे GeoStamp आपकी फ़ोटो पर GPS निर्देशांक और पता लिख सकता है। कैमरा इसके बिना भी काम करता है।</string>
+    <string name="location_allow">जगह की अनुमति दें</string>
+    <string name="location_use_precise">सटीक जगह का उपयोग करें</string>
+    <string name="location_turn_on">जगह (लोकेशन) चालू करें</string>
+    <string name="not_now">अभी नहीं</string>
+    <string name="close">बंद करें</string>
+    <string name="location_help_denied_title">जगह बंद है</string>
+    <string name="location_help_denied_body">फ़ोटो बिना GPS निर्देशांक के सहेजी जा रही हैं। स्टैम्प में जगह जोड़ने के लिए जगह की अनुमति दें।</string>
+    <string name="location_help_blocked_body">Android दोबारा नहीं पूछेगा। ऐप सेटिंग खोलें, अनुमतियाँ, फिर जगह चुनें और \"ऐप इस्तेमाल करते समय\" चुनें।</string>
+    <string name="location_help_off_title">फ़ोन की लोकेशन बंद है</string>
+    <string name="location_help_off_body">फ़ोन सेटिंग में लोकेशन चालू करें ताकि GeoStamp आपकी जगह पता कर सके।</string>
+    <string name="location_help_approx_title">अनुमानित जगह</string>
+    <string name="location_help_approx_body">GeoStamp के पास केवल अनुमानित जगह है, जो एक किलोमीटर या अधिक तक गलत हो सकती है। निर्देशांक अनुमानित के रूप में चिह्नित होते हैं। सटीक स्थिति के लिए सटीक जगह की अनुमति दें।</string>
+    <string name="location_help_searching_title">आपकी जगह खोजी जा रही है</string>
+    <string name="location_help_searching_body">GPS खुले में या खिड़की के पास सबसे अच्छा काम करता है। सही स्थिति मिलने तक फ़ोटो बिना निर्देशांक के सहेजी जाती हैं। निर्देशांक कभी अनुमान से नहीं लिखे जाते।</string>
+    <string name="gps_approximate">अनुमानित</string>
+    <string name="cd_location_status">जगह की स्थिति: %1$s। मदद के लिए दो बार टैप करें।</string>
 </resources>

@@ -12,7 +12,15 @@ data class AppSettings(
     val location: LocationSettings = LocationSettings(),
     val stamp: StampPreferences = StampPreferences(),
     val services: OnlineServices = OnlineServices(),
-    val storage: StorageSettings = StorageSettings()
+    val storage: StorageSettings = StorageSettings(),
+    val onboarding: OnboardingState = OnboardingState()
+)
+
+/** Remembers which permission explanations were shown, so Android's "don't ask again" state can be told apart from "never asked". */
+data class OnboardingState(
+    val cameraRequested: Boolean = false,
+    val locationPromptShown: Boolean = false,
+    val locationRequested: Boolean = false
 )
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK }

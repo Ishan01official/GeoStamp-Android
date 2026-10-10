@@ -63,11 +63,12 @@ fun TopOverlay(
     iconRotation: Float,
     diagnosticsOpen: Boolean,
     onToggleDiagnostics: () -> Unit,
+    onLocationClick: () -> Unit,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS)) {
-        GpsChip(location, maxAccuracyMeters, simpleMode, Modifier.align(Alignment.CenterStart))
+        GpsChip(location, maxAccuracyMeters, simpleMode, onLocationClick, Modifier.align(Alignment.CenterStart))
         if (!simpleMode) CompassChip(compass, Modifier.align(Alignment.Center))
         Row(Modifier.align(Alignment.CenterEnd), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
             CameraIconButton(
@@ -90,17 +91,17 @@ fun TopOverlay(
 }
 
 @Composable
-private fun GpsChip(location: LocationUpdate?, maxAccuracyMeters: Int, simpleMode: Boolean, modifier: Modifier) {
+private fun GpsChip(location: LocationUpdate?, maxAccuracyMeters: Int, simpleMode: Boolean, onClick: () -> Unit, modifier: Modifier) {
     val (icon, text, tint) = when (location) {
         is LocationUpdate.Available -> {
             val accuracy = location.location.accuracyMeters.roundToInt()
             val good = location.location.isAccurateEnough(maxAccuracyMeters.toFloat())
             Triple(
                 if (good) Icons.Outlined.GpsFixed else Icons.Outlined.GpsNotFixed,
-                if (simpleMode) {
-                    stringResource(if (good) R.string.gps_ready else R.string.gps_improving)
-                } else {
-                    stringResource(R.string.gps_accuracy, accuracy)
+                when {
+                    location.location.approximate -> stringResource(R.string.gps_approximate)
+                    simpleMode -> stringResource(if (good) R.string.gps_ready else R.string.gps_improving)
+                    else -> stringResource(R.string.gps_accuracy, accuracy)
                 },
                 if (good) CameraColors.Content else CameraColors.Warning
             )
@@ -112,7 +113,7 @@ private fun GpsChip(location: LocationUpdate?, maxAccuracyMeters: Int, simpleMod
         )
         LocationUpdate.PermissionDenied -> Triple(
             Icons.Outlined.GpsOff,
-            stringResource(if (simpleMode) R.string.gps_unavailable else R.string.gps_denied),
+            stringResource(R.string.gps_denied),
             CameraColors.ContentMuted
         )
         is LocationUpdate.ProvidersDisabled, is LocationUpdate.ProviderUnavailable ->
@@ -123,7 +124,14 @@ private fun GpsChip(location: LocationUpdate?, maxAccuracyMeters: Int, simpleMod
             CameraColors.ContentMuted
         )
     }
-    CameraChip(text = text, icon = icon, iconTint = tint, modifier = modifier)
+    CameraChip(
+        text = text,
+        icon = icon,
+        iconTint = tint,
+        onClick = onClick,
+        contentDescription = stringResource(R.string.cd_location_status, text),
+        modifier = modifier
+    )
 }
 
 @Composable

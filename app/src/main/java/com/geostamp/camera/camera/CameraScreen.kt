@@ -3,6 +3,7 @@ package com.geostamp.camera.camera
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
@@ -61,7 +62,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import com.geostamp.camera.location.LocationUpdate
+import com.geostamp.camera.permissions.LocationAccess
+import com.geostamp.camera.permissions.PermissionPolicy
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -82,6 +88,17 @@ private val LOCATION_PERMISSIONS = arrayOf(
     Manifest.permission.ACCESS_COARSE_LOCATION
 )
 
+/** Snapshot of the runtime permissions the camera screen depends on. Refreshed on every resume. */
+private data class PermissionSnapshot(val camera: Boolean, val fineLocation: Boolean, val coarseLocation: Boolean) {
+    val locationAccess: LocationAccess get() = PermissionPolicy.locationAccess(fineLocation, coarseLocation)
+}
+
+private fun Context.permissionSnapshot() = PermissionSnapshot(
+    camera = hasPermission(Manifest.permission.CAMERA),
+    fineLocation = hasPermission(Manifest.permission.ACCESS_FINE_LOCATION),
+    coarseLocation = hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
+)
+
 @Composable
 fun CameraRoute(
     onOpenGallery: () -> Unit,
@@ -91,20 +108,38 @@ fun CameraRoute(
     viewModel: CameraViewModel = viewModel()
 ) {
     val context = LocalContext.current
-    var cameraGranted by remember { mutableStateOf(context.hasPermission(Manifest.permission.CAMERA)) }
-    var askedOnce by rememberSaveable { mutableStateOf(false) }
-    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-        cameraGranted = context.hasPermission(Manifest.permission.CAMERA)
+    val activity = context as? Activity
+    val settings = viewModel.settings.collectAsStateWithLifecycle().value ?: return
+    val onboarding = settings.onboarding
+    var permissions by remember { mutableStateOf(context.permissionSnapshot()) }
+    var showLocationHelp by rememberSaveable { mutableStateOf(false) }
+
+    // Re-read after returning from app settings, where the user may have changed access.
+    LifecycleResumeEffect(Unit) {
+        val latest = context.permissionSnapshot()
+        if (latest != permissions) {
+            permissions = latest
+            viewModel.onPermissionsChanged()
+        }
+        onPauseOrDispose { }
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        permissions = context.permissionSnapshot()
+    }
+    val locationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        permissions = context.permissionSnapshot()
         viewModel.onPermissionsChanged()
     }
     val audioLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
-    LaunchedEffect(Unit) {
-        val missing = (arrayOf(Manifest.permission.CAMERA) + LOCATION_PERMISSIONS).filterNot { context.hasPermission(it) }
-        if (missing.isNotEmpty() && !askedOnce) {
-            askedOnce = true
-            permissionLauncher.launch(missing.toTypedArray())
-        }
+    fun rationale(permission: String) = activity?.let { ActivityCompat.shouldShowRequestPermissionRationale(it, permission) } ?: false
+    fun openAppSettings() = context.startActivity(
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
+    )
+    fun requestLocation() {
+        viewModel.updateSettings { it.copy(onboarding = it.onboarding.copy(locationPromptShown = true, locationRequested = true)) }
+        locationLauncher.launch(LOCATION_PERMISSIONS)
     }
 
     KeepPortrait()
@@ -113,14 +148,18 @@ fun CameraRoute(
         onStopOrDispose { viewModel.onScreenStopped() }
     }
 
-    if (!cameraGranted) {
-        CameraPermissionScreen(
-            onRequest = { permissionLauncher.launch(arrayOf(Manifest.permission.CAMERA) + LOCATION_PERMISSIONS) },
-            onOpenAppSettings = {
-                context.startActivity(
-                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
-                )
-            }
+    if (!permissions.camera) {
+        CameraIntroScreen(
+            action = PermissionPolicy.action(
+                granted = false,
+                everRequested = onboarding.cameraRequested,
+                shouldShowRationale = rationale(Manifest.permission.CAMERA)
+            ),
+            onRequest = {
+                viewModel.updateSettings { it.copy(onboarding = it.onboarding.copy(cameraRequested = true)) }
+                cameraLauncher.launch(Manifest.permission.CAMERA)
+            },
+            onOpenAppSettings = ::openAppSettings
         )
         return
     }
@@ -131,10 +170,44 @@ fun CameraRoute(
         onOpenSettings = onOpenSettings,
         onOpenStampSettings = onOpenStampSettings,
         onOpenMedia = onOpenMedia,
+        onLocationChipClick = { showLocationHelp = true },
         onVideoModeSelected = {
             if (!context.hasPermission(Manifest.permission.RECORD_AUDIO)) audioLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
     )
+
+    if (PermissionPolicy.shouldOfferLocation(permissions.camera, permissions.locationAccess, onboarding.locationPromptShown)) {
+        LocationOfferDialog(
+            onAllow = ::requestLocation,
+            onNotNow = { viewModel.updateSettings { it.copy(onboarding = it.onboarding.copy(locationPromptShown = true)) } }
+        )
+    }
+
+    if (showLocationHelp) {
+        val location by viewModel.location.collectAsStateWithLifecycle()
+        LocationHelpDialog(
+            access = permissions.locationAccess,
+            action = PermissionPolicy.action(
+                granted = permissions.fineLocation,
+                everRequested = onboarding.locationRequested,
+                shouldShowRationale = rationale(Manifest.permission.ACCESS_FINE_LOCATION)
+            ),
+            providersOff = location is LocationUpdate.ProvidersDisabled,
+            onRequest = {
+                showLocationHelp = false
+                requestLocation()
+            },
+            onOpenAppSettings = {
+                showLocationHelp = false
+                openAppSettings()
+            },
+            onOpenLocationSettings = {
+                showLocationHelp = false
+                context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+            },
+            onDismiss = { showLocationHelp = false }
+        )
+    }
 }
 
 @Composable
@@ -144,6 +217,7 @@ private fun CameraScreen(
     onOpenSettings: () -> Unit,
     onOpenStampSettings: () -> Unit,
     onOpenMedia: (Uri) -> Unit,
+    onLocationChipClick: () -> Unit,
     onVideoModeSelected: () -> Unit
 ) {
     val context = LocalContext.current
@@ -254,6 +328,7 @@ private fun CameraScreen(
                 iconRotation = iconRotation,
                 diagnosticsOpen = showDiagnostics,
                 onToggleDiagnostics = { showDiagnostics = !showDiagnostics },
+                onLocationClick = onLocationChipClick,
                 onOpenSettings = onOpenSettings
             )
             DiagnosticsPanel(
@@ -388,30 +463,6 @@ private fun BottomControls(
     }
 }
 
-@Composable
-private fun CameraPermissionScreen(onRequest: () -> Unit, onOpenAppSettings: () -> Unit) {
-    Box(Modifier.fillMaxSize().background(CameraColors.Background).padding(Dimens.SpaceXl), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.widthIn(max = 420.dp)) {
-            Text(
-                stringResource(R.string.permission_camera_title),
-                color = CameraColors.Content,
-                style = androidx.compose.material3.MaterialTheme.typography.headlineSmall,
-                textAlign = TextAlign.Center
-            )
-            Spacer(Modifier.height(Dimens.SpaceM))
-            Text(
-                stringResource(R.string.permission_camera_body),
-                color = CameraColors.ContentMuted,
-                style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center
-            )
-            Spacer(Modifier.height(Dimens.SpaceXl))
-            Button(onClick = onRequest) { Text(stringResource(R.string.permission_grant)) }
-            TextButton(onClick = onOpenAppSettings) { Text(stringResource(R.string.permission_open_settings), color = CameraColors.Content) }
-        }
-    }
-}
-
 /** The camera UI stays portrait like native camera apps; icons rotate instead and CameraX orients the photo. */
 @SuppressLint("SourceLockedOrientationActivity")
 @Composable
@@ -423,5 +474,5 @@ private fun KeepPortrait() {
     }
 }
 
-private fun android.content.Context.hasPermission(permission: String): Boolean =
+private fun Context.hasPermission(permission: String): Boolean =
     ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED

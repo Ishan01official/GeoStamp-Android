@@ -84,6 +84,10 @@ private object Keys {
     val saveOriginal = booleanPreferencesKey("storage.save_original")
     val jpegQuality = intPreferencesKey("storage.jpeg_quality")
 
+    val cameraRequested = booleanPreferencesKey("onboarding.camera_requested")
+    val locationPromptShown = booleanPreferencesKey("onboarding.location_prompt_shown")
+    val locationRequested = booleanPreferencesKey("onboarding.location_requested")
+
     fun field(template: StampTemplate, name: String) =
         booleanPreferencesKey("stamp.fields.${template.name}.$name")
 }
@@ -125,6 +129,11 @@ private fun Preferences.toAppSettings(): AppSettings {
             saveOriginal = this[Keys.saveOriginal] ?: defaults.storage.saveOriginal,
             jpegQuality = (this[Keys.jpegQuality] ?: defaults.storage.jpegQuality)
                 .coerceIn(StorageSettings.QUALITY_RANGE)
+        ),
+        onboarding = OnboardingState(
+            cameraRequested = this[Keys.cameraRequested] ?: false,
+            locationPromptShown = this[Keys.locationPromptShown] ?: false,
+            locationRequested = this[Keys.locationRequested] ?: false
         )
     )
 }
@@ -210,6 +219,10 @@ private fun MutablePreferences.write(settings: AppSettings) {
 
     this[Keys.saveOriginal] = settings.storage.saveOriginal
     this[Keys.jpegQuality] = settings.storage.jpegQuality
+
+    this[Keys.cameraRequested] = settings.onboarding.cameraRequested
+    this[Keys.locationPromptShown] = settings.onboarding.locationPromptShown
+    this[Keys.locationRequested] = settings.onboarding.locationRequested
 }
 
 private fun MutablePreferences.writeFields(template: StampTemplate, fields: StampFields) {

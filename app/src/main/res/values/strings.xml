@@ -45,8 +45,6 @@
     <string name="gps_unavailable">Location unavailable</string>
     <string name="compass_unavailable">No compass</string>
     <string name="compass_calibrate">Calibrate</string>
-    <string name="permission_camera_title">Camera access needed</string>
-    <string name="permission_camera_body">GeoStamp needs the camera to take photos. Nothing leaves your phone unless you turn on online features.</string>
     <string name="permission_grant">Allow camera</string>
     <string name="permission_open_settings">Open app settings</string>
     <string name="saved_photo">Photo saved</string>
@@ -265,4 +263,25 @@
         <item quantity="one">Stamped %d photo</item>
         <item quantity="other">Stamped %d photos</item>
     </plurals>
+    <string name="intro_title">GeoStamp is a camera</string>
+    <string name="intro_body">It takes photos and videos with the date, time and place written on them. Allow the camera to start. Photos stay on your phone.</string>
+    <string name="intro_camera_blocked">Camera access is turned off for GeoStamp. Open app settings, choose Permissions, then allow Camera.</string>
+    <string name="location_offer_title">Add location to your photos?</string>
+    <string name="location_offer_body">Location is optional. With it, GeoStamp can write GPS coordinates and the address on your photos. The camera works without it.</string>
+    <string name="location_allow">Allow location</string>
+    <string name="location_use_precise">Use precise location</string>
+    <string name="location_turn_on">Turn on location</string>
+    <string name="not_now">Not now</string>
+    <string name="close">Close</string>
+    <string name="location_help_denied_title">Location is off</string>
+    <string name="location_help_denied_body">Photos are saved without GPS coordinates. Allow location to add the place to your stamps.</string>
+    <string name="location_help_blocked_body">Android will not ask again. Open app settings, choose Permissions, then Location, and pick \"While using the app\".</string>
+    <string name="location_help_off_title">Phone location is off</string>
+    <string name="location_help_off_body">Turn on location in your phone settings so GeoStamp can find where you are.</string>
+    <string name="location_help_approx_title">Approximate location</string>
+    <string name="location_help_approx_body">GeoStamp only has approximate location, which can be off by a kilometre or more. Coordinates are marked as approximate. Allow precise location for exact positions.</string>
+    <string name="location_help_searching_title">Finding your location</string>
+    <string name="location_help_searching_body">GPS works best outdoors or near a window. Until a fix is ready, photos are saved without coordinates. Coordinates are never guessed.</string>
+    <string name="gps_approximate">Approximate</string>
+    <string name="cd_location_status">Location status: %1$s. Double tap for help.</string>
 </resources>
