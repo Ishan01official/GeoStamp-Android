@@ -72,8 +72,6 @@ fun TopOverlay(
     maxAccuracyMeters: Int,
     simpleMode: Boolean,
     iconRotation: Float,
-    diagnosticsOpen: Boolean,
-    onToggleDiagnostics: () -> Unit,
     onLocationClick: () -> Unit,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier
@@ -82,14 +80,6 @@ fun TopOverlay(
         GpsChip(location, maxAccuracyMeters, simpleMode, onLocationClick, Modifier.align(Alignment.CenterStart))
         if (!simpleMode) HeadingChip(heading, hasCompass, Modifier.align(Alignment.Center))
         Row(Modifier.align(Alignment.CenterEnd), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
-            CameraIconButton(
-                icon = Icons.Outlined.Info,
-                contentDescription = stringResource(R.string.cd_diagnostics),
-                onClick = onToggleDiagnostics,
-                rotation = iconRotation,
-                active = diagnosticsOpen,
-                size = 36.dp
-            )
             CameraIconButton(
                 icon = Icons.Outlined.Settings,
                 contentDescription = stringResource(R.string.cd_settings),
@@ -174,34 +164,6 @@ private fun rememberHeadingLabels(): HeadingLabels {
     val magnetic = stringResource(R.string.heading_magnetic_format)
     val course = stringResource(R.string.heading_course_format)
     return remember(trueHeading, magnetic, course) { HeadingLabels(trueHeading, magnetic, course) }
-}
-
-/** Collapsible technical details; kept out of the primary UI. */
-@Composable
-fun DiagnosticsPanel(visible: Boolean, rows: List<Pair<String, String>>, modifier: Modifier = Modifier) {
-    AnimatedVisibility(
-        visible = visible,
-        enter = fadeIn() + expandVertically(),
-        exit = fadeOut() + shrinkVertically(),
-        modifier = modifier
-    ) {
-        Column(
-            Modifier
-                .padding(horizontal = Dimens.SpaceM)
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(Dimens.CornerMedium))
-                .background(CameraColors.ScrimStrong)
-                .padding(Dimens.SpaceM),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            rows.forEach { (label, value) ->
-                Row {
-                    Text(label, style = CameraLabel, color = CameraColors.ContentMuted, modifier = Modifier.weight(0.32f))
-                    Text(value, style = CameraLabel, color = CameraColors.Content, modifier = Modifier.weight(0.68f))
-                }
-            }
-        }
-    }
 }
 
 @Composable

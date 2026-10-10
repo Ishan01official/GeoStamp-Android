@@ -208,3 +208,5 @@ class CameraSession(context: Context) {
 fun CaptureMode.isPhotoMode(): Boolean = this == CaptureMode.PHOTO || this == CaptureMode.DUAL_PHOTO
 
 fun CaptureMode.isVideoMode(): Boolean = this == CaptureMode.VIDEO || this == CaptureMode.DUAL_VIDEO
+
+fun CaptureMode.isDual(): Boolean = this == CaptureMode.DUAL_PHOTO || this == CaptureMode.DUAL_VIDEO

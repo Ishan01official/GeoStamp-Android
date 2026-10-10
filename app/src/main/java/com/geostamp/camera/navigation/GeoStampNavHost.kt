@@ -13,6 +13,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.geostamp.camera.camera.CameraRoute
+import com.geostamp.camera.diagnostics.DiagnosticsScreen
 import com.geostamp.camera.gallery.GalleryScreen
 import com.geostamp.camera.gallery.GalleryViewModel
 import com.geostamp.camera.gallery.MediaViewerScreen
@@ -27,6 +28,7 @@ private object Routes {
     const val VIEWER = "viewer?uri={uri}"
     const val SETTINGS = "settings"
     const val STAMP = "stamp"
+    const val DIAGNOSTICS = "diagnostics"
 
     fun viewer(uri: Uri) = "viewer?uri=${Uri.encode(uri.toString())}"
 }
@@ -68,8 +70,12 @@ fun GeoStampNavHost(settingsViewModel: SettingsViewModel) {
             SettingsScreen(
                 viewModel = settingsViewModel,
                 onBack = { navController.popBackStack() },
-                onOpenStampSettings = { navController.navigate(Routes.STAMP) }
+                onOpenStampSettings = { navController.navigate(Routes.STAMP) },
+                onOpenDiagnostics = { navController.navigate(Routes.DIAGNOSTICS) }
             )
+        }
+        composable(Routes.DIAGNOSTICS) {
+            DiagnosticsScreen(onBack = { navController.popBackStack() })
         }
         composable(Routes.STAMP) {
             StampSettingsScreen(viewModel = settingsViewModel, onBack = { navController.popBackStack() })

@@ -15,7 +15,6 @@
     <string name="cd_grid_off">ग्रिड लाइनें बंद</string>
     <string name="cd_timer">टाइमर: %s</string>
     <string name="cd_more_controls">और कैमरा नियंत्रण</string>
-    <string name="cd_diagnostics">कैमरा विवरण</string>
     <string name="cd_zoom">ज़ूम %s</string>
     <string name="cd_focus">फ़ोकस बिंदु</string>
     <string name="mode_photo">फ़ोटो</string>
@@ -50,16 +49,8 @@
     <string name="error_capture_failed">फ़ोटो नहीं ली जा सकी</string>
     <string name="error_save_failed">फ़ोटो सहेजी नहीं जा सकी</string>
     <string name="error_video_failed">वीडियो रिकॉर्ड नहीं हो सका</string>
-    <string name="error_dual_capture_unavailable">इस डिवाइस पर डुअल कैप्चर उपलब्ध नहीं है</string>
     <string name="stamp_off_badge">स्टैम्प बंद</string>
 
-    <string name="diag_camera">कैमरा</string>
-    <string name="diag_location">लोकेशन</string>
-    <string name="diag_compass">कम्पास</string>
-    <string name="diag_last_capture">पिछली फ़ोटो</string>
-    <string name="diag_lens_back">पीछे का कैमरा</string>
-    <string name="diag_lens_front">सामने का कैमरा</string>
-    <string name="diag_none">—</string>
 
     <string name="controls_title">कैमरा नियंत्रण</string>
     <string name="ctl_flash">फ़्लैश</string>
@@ -321,4 +312,17 @@
     <string name="player_fullscreen">पूरी स्क्रीन</string>
     <string name="player_exit_fullscreen">पूरी स्क्रीन से बाहर</string>
     <string name="info_duration">अवधि</string>
+    <string name="cd_mode_unsupported">%1$s, इस डिवाइस पर समर्थित नहीं</string>
+    <string name="cd_inset_move">सामने वाले कैमरे की विंडो खिसकाएँ</string>
+    <string name="cd_inset_size">सामने वाले कैमरे की विंडो का आकार बदलें</string>
+    <string name="dual_unsupported_title">इस डिवाइस पर समर्थित नहीं</string>
+    <string name="dual_unsupported_body">ड्यूल कैप्चर एक ही पल में आगे और पीछे दोनों कैमरों से रिकॉर्ड करता है। %1$s GeoStamp दूसरा कैमरा नकली नहीं बनाता और न ही एक के बाद एक दो फ़ोटो लेता है।</string>
+    <string name="dual_reason_hardware">यह फ़ोन आगे और पीछे के कैमरे एक साथ नहीं चला सकता।</string>
+    <string name="dual_reason_android">इसके लिए Android 11 या नया संस्करण चाहिए।</string>
+    <string name="dual_reason_cameras">इस फ़ोन में आगे और पीछे दोनों कैमरे नहीं हैं।</string>
+    <string name="dual_runtime_failed">यह फ़ोन दोनों कैमरे एक साथ शुरू नहीं कर सका। फ़ोटो मोड पर वापस आ गए।</string>
+    <string name="diagnostics_title">कैमरा जाँच</string>
+    <string name="diagnostics_summary">इस फ़ोन के कैमरे, ड्यूल कैप्चर सपोर्ट और सेंसर</string>
+    <string name="diagnostics_intro">यह फ़ोन अपने कैमरों और सेंसरों के बारे में क्या बताता है, और GeoStamp ने उन्हें चालू करते समय क्या देखा। समस्या बताते समय इसे साझा करें।</string>
+    <string name="diagnostics_share">रिपोर्ट साझा करें</string>
 </resources>

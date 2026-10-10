@@ -17,7 +17,6 @@
     <string name="cd_grid_off">Grid lines off</string>
     <string name="cd_timer">Timer: %s</string>
     <string name="cd_more_controls">More camera controls</string>
-    <string name="cd_diagnostics">Camera details</string>
     <string name="cd_zoom">Zoom %s</string>
     <string name="cd_focus">Focus point</string>
     <string name="mode_photo">Photo</string>
@@ -52,17 +51,9 @@
     <string name="error_capture_failed">Couldn\'t take the photo</string>
     <string name="error_save_failed">Couldn\'t save the photo</string>
     <string name="error_video_failed">Couldn\'t record video</string>
-    <string name="error_dual_capture_unavailable">Dual Capture is not available on this device</string>
     <string name="stamp_off_badge">Stamp off</string>
 
     <!-- Diagnostics -->
-    <string name="diag_camera">Camera</string>
-    <string name="diag_location">Location</string>
-    <string name="diag_compass">Compass</string>
-    <string name="diag_last_capture">Last photo</string>
-    <string name="diag_lens_back">Rear camera</string>
-    <string name="diag_lens_front">Front camera</string>
-    <string name="diag_none">—</string>
 
     <!-- Camera controls sheet -->
     <string name="controls_title">Camera controls</string>
@@ -331,4 +322,17 @@
     <string name="player_fullscreen">Full screen</string>
     <string name="player_exit_fullscreen">Exit full screen</string>
     <string name="info_duration">Length</string>
+    <string name="cd_mode_unsupported">%1$s, not supported on this device</string>
+    <string name="cd_inset_move">Move front camera window</string>
+    <string name="cd_inset_size">Change front camera window size</string>
+    <string name="dual_unsupported_title">Not supported on this device</string>
+    <string name="dual_unsupported_body">Dual Capture records the front and rear cameras at the same moment. %1$s GeoStamp does not fake a second camera or take two photos one after another.</string>
+    <string name="dual_reason_hardware">This phone cannot run its front and rear cameras together.</string>
+    <string name="dual_reason_android">It needs Android 11 or newer.</string>
+    <string name="dual_reason_cameras">This phone does not have both a front and a rear camera.</string>
+    <string name="dual_runtime_failed">This phone could not start both cameras together. Switched back to Photo.</string>
+    <string name="diagnostics_title">Camera diagnostics</string>
+    <string name="diagnostics_summary">Cameras, Dual Capture support and sensors on this phone</string>
+    <string name="diagnostics_intro">What this phone reports about its cameras and sensors, and what GeoStamp observed when starting them. Share it when reporting a problem.</string>
+    <string name="diagnostics_share">Share report</string>
 </resources>

@@ -27,6 +27,7 @@ import androidx.compose.material.icons.outlined.Grid3x3
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material.icons.outlined.Map
+import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.Photo
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.Policy
@@ -68,7 +69,7 @@ private const val PRIVACY_URL = "$SOURCE_URL/blob/main/PRIVACY.md"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onOpenStampSettings: () -> Unit) {
+fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onOpenStampSettings: () -> Unit, onOpenDiagnostics: () -> Unit) {
     val settings = viewModel.settings.collectAsStateWithLifecycle().value ?: return
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -309,6 +310,12 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onOpenStamp
             item {
                 SettingsSection(stringResource(R.string.section_about)) {
                     InfoRow(stringResource(R.string.about_version), BuildConfig.VERSION_NAME, Icons.Outlined.Info)
+                    ClickRow(
+                        title = stringResource(R.string.diagnostics_title),
+                        summary = stringResource(R.string.diagnostics_summary),
+                        icon = Icons.Outlined.Memory,
+                        onClick = onOpenDiagnostics
+                    )
                     ClickRow(
                         title = stringResource(R.string.about_source),
                         summary = SOURCE_URL.removePrefix("https://"),

@@ -241,7 +241,7 @@ private fun CameraScreen(
     val shutterFlash = remember { Animatable(0f) }
 
     var showSheet by rememberSaveable { mutableStateOf(false) }
-    var showDiagnostics by rememberSaveable { mutableStateOf(false) }
+    var showDualInfo by rememberSaveable { mutableStateOf(false) }
     var focusPoint by remember { mutableStateOf<Offset?>(null) }
     var focusKey by remember { mutableIntStateOf(0) }
 
@@ -284,6 +284,10 @@ private fun CameraScreen(
                     )
                     if (result == SnackbarResult.ActionPerformed) onOpenMedia(event.uri)
                 }
+                CameraEvent.DualUnsupported -> showDualInfo = true
+                is CameraEvent.DualFailed -> scope.launch {
+                    snackbar.showSnackbar(context.getString(R.string.dual_runtime_failed), duration = SnackbarDuration.Long)
+                }
                 is CameraEvent.Failed -> scope.launch {
                     val message = context.getString(event.messageRes)
                     snackbar.showSnackbar(listOfNotNull(message, event.detail).joinToString(": "))
@@ -292,10 +296,10 @@ private fun CameraScreen(
         }
     }
 
-    val previewRatio = if (capture.mode.isVideoMode()) {
-        PhotoAspectRatio.SIXTEEN_NINE.portraitWidthOverHeight
-    } else {
-        settings.camera.aspectRatio.portraitWidthOverHeight
+    val previewRatio = when {
+        capture.mode.isVideoMode() -> PhotoAspectRatio.SIXTEEN_NINE.portraitWidthOverHeight
+        capture.mode == CaptureMode.DUAL_PHOTO -> PhotoAspectRatio.FOUR_THREE.portraitWidthOverHeight
+        else -> settings.camera.aspectRatio.portraitWidthOverHeight
     }
 
     Box(Modifier.fillMaxSize().background(CameraColors.Background)) {
@@ -308,7 +312,11 @@ private fun CameraScreen(
                 .align(Alignment.TopCenter)
                 .onSizeChanged { viewModel.onOverlaySize(it.width, it.height) }
         ) {
-            AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
+            if (capture.mode.isDual()) {
+                DualViewfinder(viewModel, capture.mode, settings.stamp.position)
+            } else {
+                AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
+            }
             if (settings.camera.gridEnabled) GridOverlay()
             // Shown in video mode too: the same card is burned into every frame after recording.
             liveStamp?.let { bitmap ->
@@ -329,9 +337,9 @@ private fun CameraScreen(
                             viewModel.setZoom(current * zoom)
                         }
                     }
-                    .pointerInput(settings.camera.tapToFocus) {
+                    .pointerInput(settings.camera.tapToFocus, capture.mode) {
                         detectTapGestures { offset ->
-                            if (!settings.camera.tapToFocus) return@detectTapGestures
+                            if (!settings.camera.tapToFocus || capture.mode.isDual()) return@detectTapGestures
                             focusPoint = offset
                             focusKey++
                             val point = previewView.meteringPointFactory.createPoint(offset.x, offset.y)
@@ -351,24 +359,8 @@ private fun CameraScreen(
                 maxAccuracyMeters = settings.location.maxAccuracyMeters,
                 simpleMode = settings.camera.simpleMode,
                 iconRotation = iconRotation,
-                diagnosticsOpen = showDiagnostics,
-                onToggleDiagnostics = { showDiagnostics = !showDiagnostics },
                 onLocationClick = onLocationChipClick,
                 onOpenSettings = onOpenSettings
-            )
-            DiagnosticsPanel(
-                visible = showDiagnostics,
-                rows = listOf(
-                    stringResource(R.string.diag_camera) to listOf(
-                        stringResource(if (capture.lens == LensFacing.BACK) R.string.diag_lens_back else R.string.diag_lens_front),
-                        stringResource(settings.camera.aspectRatio.labelRes),
-                        stringResource(settings.camera.resolution.labelRes),
-                        zoomState?.let { ZoomPresets.label(it.zoomRatio) }
-                    ).filterNotNull().joinToString(" · "),
-                    stringResource(R.string.diag_location) to (location?.displayText() ?: stringResource(R.string.diag_none)),
-                    stringResource(R.string.diag_compass) to (heading?.let { "${it.cardinal} ${it.degrees}° · ${it.kind}" } ?: stringResource(R.string.diag_none)),
-                    stringResource(R.string.diag_last_capture) to (capture.lastCaptureInfo ?: stringResource(R.string.diag_none))
-                )
             )
         }
 
@@ -380,6 +372,8 @@ private fun CameraScreen(
             iconRotation = iconRotation,
             onCameraChange = viewModel::updateCameraSettings,
             onOpenSheet = { showSheet = true },
+            onMoveInset = viewModel.dual::cycleCorner,
+            onResizeInset = viewModel.dual::cycleSize,
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .statusBarsPadding()
@@ -410,6 +404,10 @@ private fun CameraScreen(
             snackbar,
             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 180.dp)
         )
+    }
+
+    if (showDualInfo) {
+        DualUnsupportedDialog(viewModel.dualUnsupportedReason, onDismiss = { showDualInfo = false })
     }
 
     if (showAddressEditor) {

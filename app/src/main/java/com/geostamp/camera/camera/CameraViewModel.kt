@@ -22,6 +22,12 @@ import com.geostamp.camera.address.AddressEditScope
 import com.geostamp.camera.address.AddressOverride
 import com.geostamp.camera.address.StampAddress
 import com.geostamp.camera.appContainer
+import com.geostamp.camera.capture.ProcessedPhoto
+import com.geostamp.camera.dual.DualCameraSession
+import com.geostamp.camera.dual.DualCaptureController
+import com.geostamp.camera.stamps.StampPosition
+import androidx.camera.core.Preview
+import androidx.lifecycle.LifecycleOwner
 import com.geostamp.camera.capture.CaptureMode
 import com.geostamp.camera.capture.CapturedImageDecoder
 import com.geostamp.camera.capture.LensFacing
@@ -93,6 +99,12 @@ sealed interface CameraEvent {
 
     /** Non-blocking notice: the photo was saved, but without coordinates. Coordinates are never invented. */
     data object SavedWithoutGps : CameraEvent
+
+    /** The user picked a dual mode this phone cannot run; explain instead of faking it. */
+    data object DualUnsupported : CameraEvent
+
+    /** The phone advertised concurrent cameras but refused to start them. */
+    data class DualFailed(val detail: String?) : CameraEvent
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -106,6 +118,11 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     private val captureExecutor = Executors.newSingleThreadExecutor()
 
     val session = CameraSession(application)
+
+    /** Simultaneous front + rear capture, used only where the hardware supports it. */
+    val dual = DualCaptureController(DualCameraSession(application), container.photoProcessor) {
+        container.cameraCapabilityRepository.capabilities()
+    }
 
     /** Post-recording stamping progress, shared with the app-wide video coordinator. */
     val videoJob: StateFlow<VideoJobState> = container.videoCapture.state
@@ -268,7 +285,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     fun setMode(mode: CaptureMode) {
         if (_capture.value.recordingSeconds != null || mode == _capture.value.mode) return
         if (mode !in _capture.value.supportedModes) {
-            _events.trySend(CameraEvent.Failed(R.string.error_dual_capture_unavailable))
+            _events.trySend(CameraEvent.DualUnsupported)
             return
         }
         cancelCountdown()
@@ -293,8 +310,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     fun onShutter() {
         val state = _capture.value
         when {
-            state.mode == CaptureMode.DUAL_PHOTO || state.mode == CaptureMode.DUAL_VIDEO ->
-                _events.trySend(CameraEvent.Failed(R.string.error_dual_capture_unavailable))
+            state.mode == CaptureMode.DUAL_PHOTO -> if (!state.isProcessing) captureDualPhoto()
             state.mode.isVideoMode() -> if (state.recordingSeconds == null) startRecording() else stopRecording()
             state.countdown != null -> cancelCountdown()
             state.isProcessing -> Unit
@@ -325,7 +341,30 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     private fun capturePhoto() {
-        val appSettings = settings.value ?: return
+        val (request, options) = photoRequest() ?: return
+        _capture.update { it.copy(isProcessing = true) }
+        _events.trySend(CameraEvent.ShutterFeedback)
+        if (request.data.location == null && location.value !is LocationUpdate.PermissionDenied) _events.trySend(CameraEvent.SavedWithoutGps)
+
+        session.takePicture(captureExecutor, object : ImageCapture.OnImageCapturedCallback() {
+            override fun onCaptureSuccess(image: ImageProxy) {
+                val decoded = runCatching {
+                    image.use {
+                        val original = if (options.saveOriginal) CapturedImageDecoder.jpegBytes(it) else null
+                        Triple(CapturedImageDecoder.decodeUpright(it), original, it.imageInfo.rotationDegrees)
+                    }
+                }
+                decoded.onSuccess { (upright, original, rotation) -> processInBackground(upright, original, rotation, request, options) }
+                    .onFailure { fail(R.string.error_capture_failed, it) }
+            }
+
+            override fun onError(exception: ImageCaptureException) = fail(R.string.error_capture_failed, exception)
+        })
+    }
+
+    /** Reads the stamp data for "now" and consumes a one-capture address edit. */
+    private fun photoRequest(): Pair<StampRequest, SaveOptions>? {
+        val appSettings = settings.value ?: return null
         val capturedAt = System.currentTimeMillis()
         val fix = usableLocation(appSettings, capturedAt)
         val nearby = environment.forCapture(fix)
@@ -344,25 +383,43 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
             map = nearby.map?.value,
             logo = logo.value
         )
-        val options = SaveOptions(appSettings.storage.jpegQuality, appSettings.storage.saveOriginal)
+        return request to SaveOptions(appSettings.storage.jpegQuality, appSettings.storage.saveOriginal)
+    }
+
+    private fun captureDualPhoto() {
+        val (request, options) = photoRequest() ?: return
         _capture.update { it.copy(isProcessing = true) }
         _events.trySend(CameraEvent.ShutterFeedback)
-        if (fix == null && location.value !is LocationUpdate.PermissionDenied) _events.trySend(CameraEvent.SavedWithoutGps)
+        if (request.data.location == null && location.value !is LocationUpdate.PermissionDenied) _events.trySend(CameraEvent.SavedWithoutGps)
+        container.applicationScope.launch {
+            runCatching { dual.captureAndSave(captureExecutor, request, options) }
+                .onSuccess { photo -> onPhotoSaved(photo) }
+                .onFailure { fail(R.string.error_capture_failed, it) }
+        }
+    }
 
-        session.takePicture(captureExecutor, object : ImageCapture.OnImageCapturedCallback() {
-            override fun onCaptureSuccess(image: ImageProxy) {
-                val decoded = runCatching {
-                    image.use {
-                        val original = if (options.saveOriginal) CapturedImageDecoder.jpegBytes(it) else null
-                        Triple(CapturedImageDecoder.decodeUpright(it), original, it.imageInfo.rotationDegrees)
-                    }
-                }
-                decoded.onSuccess { (upright, original, rotation) -> processInBackground(upright, original, rotation, request, options) }
-                    .onFailure { fail(R.string.error_capture_failed, it) }
-            }
+    val dualUnsupportedReason: DualUnsupportedReason?
+        get() = container.cameraCapabilityRepository.capabilities().dualUnsupportedReason
 
-            override fun onError(exception: ImageCaptureException) = fail(R.string.error_capture_failed, exception)
-        })
+    /** Binds both cameras for a dual mode. On a runtime refusal the app returns to normal photo mode. */
+    suspend fun bindDual(owner: LifecycleOwner, main: Preview.SurfaceProvider, front: Preview.SurfaceProvider?): Boolean {
+        val mode = _capture.value.mode
+        val stampPosition = settings.value?.stamp?.position ?: StampPosition.BOTTOM
+        session.unbind()
+        val ok = dual.bind(mode, owner, main, front, stampPosition)
+        container.cameraCapabilityRepository.recordDualResult(mode.name, if (ok) "started" else "failed: ${dual.state.value.runtimeFailure}")
+        if (!ok) {
+            _events.trySend(CameraEvent.DualFailed(dual.state.value.runtimeFailure))
+            _capture.update { it.copy(mode = CaptureMode.PHOTO) }
+        }
+        return ok
+    }
+
+    /** Leaves concurrent mode and gives the cameras back to the single-camera controller. */
+    fun leaveDual(owner: LifecycleOwner) {
+        dual.unbind()
+        session.bind(owner)
+        applyCameraConfig()
     }
 
     /** Runs in the application scope so a photo is still saved if the user leaves the screen. */
@@ -375,18 +432,20 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     ) {
         container.applicationScope.launch(Dispatchers.Default) {
             runCatching { container.photoProcessor.process(upright, original, originalRotation, request, options) }
-                .onSuccess { photo ->
-                    _capture.update {
-                        it.copy(
-                            isProcessing = false,
-                            lastCapture = LastCapture(photo.uri, photo.thumbnail, isVideo = false),
-                            lastCaptureInfo = "${photo.width}×${photo.height}"
-                        )
-                    }
-                    _events.trySend(CameraEvent.Saved(photo.uri, isVideo = false))
-                }
+                .onSuccess(::onPhotoSaved)
                 .onFailure { fail(R.string.error_save_failed, it) }
         }
+    }
+
+    private fun onPhotoSaved(photo: ProcessedPhoto) {
+        _capture.update {
+            it.copy(
+                isProcessing = false,
+                lastCapture = LastCapture(photo.uri, photo.thumbnail, isVideo = false),
+                lastCaptureInfo = "${photo.width}×${photo.height}"
+            )
+        }
+        _events.trySend(CameraEvent.Saved(photo.uri, isVideo = false))
     }
 
     private fun fail(messageRes: Int, error: Throwable) {
@@ -423,7 +482,12 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         val startedAt = System.currentTimeMillis()
         val file = videos.newRecordingFile(startedAt)
         recording = runCatching {
-            session.startRecording(file, VideoLimits.MAX_DURATION_MILLIS, withAudio) { event -> onRecordEvent(event, file) }
+            val listener: (VideoRecordEvent) -> Unit = { event -> onRecordEvent(event, file) }
+            if (_capture.value.mode == CaptureMode.DUAL_VIDEO) {
+                dual.startRecording(file, VideoLimits.MAX_DURATION_MILLIS, withAudio, listener)
+            } else {
+                session.startRecording(file, VideoLimits.MAX_DURATION_MILLIS, withAudio, listener)
+            }
         }.onFailure { fail(R.string.error_video_failed, it) }.getOrNull()
         if (recording != null) {
             recordingStartedAtMillis = startedAt
@@ -553,6 +617,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     private fun applyCameraConfig() {
         val camera = settings.value?.camera ?: return
         val state = _capture.value
+        if (state.mode.isDual()) return
         session.apply(CameraConfig(state.mode, state.lens, camera.aspectRatio, camera.resolution, camera.flashMode))
     }
 

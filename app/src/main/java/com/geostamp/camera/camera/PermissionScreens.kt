@@ -135,3 +135,20 @@ fun LocationHelpDialog(
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) } }
     )
 }
+
+/** Explains why Dual Capture is unavailable. GeoStamp never fakes a second camera. */
+@Composable
+fun DualUnsupportedDialog(reason: DualUnsupportedReason?, onDismiss: () -> Unit) {
+    val detail = when (reason) {
+        DualUnsupportedReason.ANDROID_TOO_OLD -> R.string.dual_reason_android
+        DualUnsupportedReason.NO_FRONT_OR_REAR_CAMERA -> R.string.dual_reason_cameras
+        DualUnsupportedReason.NO_CONCURRENT_FEATURE, DualUnsupportedReason.NO_FRONT_REAR_PAIR, null -> R.string.dual_reason_hardware
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Icon(Icons.Outlined.PhotoCamera, contentDescription = null) },
+        title = { Text(stringResource(R.string.dual_unsupported_title)) },
+        text = { Text(stringResource(R.string.dual_unsupported_body, stringResource(detail))) },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) } }
+    )
+}

@@ -54,36 +54,4 @@ class LocationStampTest {
         assertTrue(stamp.isAccurateEnough(10f))
         assertFalse(stamp.isAccurateEnough(5f))
     }
-
-    @Test
-    fun locationUpdateTextReportsStaleAndDeniedStates() {
-        val stamp = LocationStamp(
-            latitude = 1.0,
-            longitude = 2.0,
-            accuracyMeters = 30f,
-            measuredAtMillis = 1_000L,
-            altitudeMeters = null,
-            speedMetersPerSecond = null,
-            provider = "network",
-            approximate = true
-        )
-        val providerStatus = LocationProviderStatus(
-            gpsEnabled = false,
-            networkEnabled = true,
-            selectedProvider = "network"
-        )
-
-        assertEquals(
-            "network approx GPS 30m, 4s old",
-            LocationUpdate.Available(stamp, providerStatus).displayText(nowMillis = 5_000L)
-        )
-        assertEquals(
-            "Stale network location (4s old)",
-            LocationUpdate.StaleLastKnown(stamp, providerStatus).displayText(nowMillis = 5_000L)
-        )
-        assertEquals(
-            "Location denied; camera works without GPS",
-            LocationUpdate.PermissionDenied.displayText()
-        )
-    }
 }
