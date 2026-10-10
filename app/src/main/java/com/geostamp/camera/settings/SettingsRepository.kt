@@ -59,6 +59,8 @@ private object Keys {
 
     val maxAccuracy = intPreferencesKey("location.max_accuracy")
     val maxAge = intPreferencesKey("location.max_age")
+    val locationDisplayRefresh = stringPreferencesKey("location.display_refresh")
+    val compassSmoothing = stringPreferencesKey("location.compass_smoothing")
 
     val stampEnabled = booleanPreferencesKey("stamp.enabled")
     val template = stringPreferencesKey("stamp.template")
@@ -106,7 +108,9 @@ private fun Preferences.toAppSettings(): AppSettings {
         ),
         location = LocationSettings(
             maxAccuracyMeters = this[Keys.maxAccuracy] ?: defaults.location.maxAccuracyMeters,
-            maxAgeSeconds = this[Keys.maxAge] ?: defaults.location.maxAgeSeconds
+            maxAgeSeconds = this[Keys.maxAge] ?: defaults.location.maxAgeSeconds,
+            displayRefresh = enumOf(Keys.locationDisplayRefresh, defaults.location.displayRefresh),
+            compassSmoothing = enumOf(Keys.compassSmoothing, defaults.location.compassSmoothing)
         ),
         stamp = readStamp(defaults.stamp),
         services = OnlineServices(
@@ -175,6 +179,8 @@ private fun MutablePreferences.write(settings: AppSettings) {
 
     this[Keys.maxAccuracy] = settings.location.maxAccuracyMeters
     this[Keys.maxAge] = settings.location.maxAgeSeconds
+    this[Keys.locationDisplayRefresh] = settings.location.displayRefresh.name
+    this[Keys.compassSmoothing] = settings.location.compassSmoothing.name
 
     with(settings.stamp) {
         this@write[Keys.stampEnabled] = enabled

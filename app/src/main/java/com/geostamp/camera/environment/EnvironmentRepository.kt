@@ -32,6 +32,7 @@ class EnvironmentRepository(
     private val addressResolver: AddressResolver,
     private val weatherClient: WeatherClient,
     private val mapTileRenderer: MapTileRenderer,
+    private val addressCache: AddressCache = AddressCache(),
     private val clock: () -> Long = System::currentTimeMillis
 ) {
     private val _snapshot = MutableStateFlow(EnvironmentSnapshot())
@@ -39,6 +40,8 @@ class EnvironmentRepository(
     private var addressJob: Job? = null
     private var weatherJob: Job? = null
     private var mapJob: Job? = null
+    private var addressRequestId = 0L
+    private var lastAddressRequestAtMillis = 0L
 
     fun onLocation(location: LocationStamp, services: OnlineServices) {
         val current = _snapshot.value
@@ -46,12 +49,31 @@ class EnvironmentRepository(
         if (!services.weather) _snapshot.update { it.copy(weather = null) }
         if (!services.mapTiles) _snapshot.update { it.copy(map = null) }
 
-        if (services.addressLookup && needsRefresh(current.address, location, ADDRESS_TTL) && addressJob?.isActive != true) {
+        val now = clock()
+        if (services.addressLookup) {
+            addressCache.get(location, now)?.let { cached ->
+                _snapshot.update { it.copy(address = Placed(cached.address, cached.near, cached.fetchedAtMillis)) }
+            }
+        }
+
+        if (services.addressLookup &&
+            needsRefresh(_snapshot.value.address, location, ADDRESS_TTL) &&
+            now - lastAddressRequestAtMillis >= ADDRESS_MIN_REFRESH_INTERVAL
+        ) {
+            addressJob?.cancel()
+            val requestId = ++addressRequestId
+            lastAddressRequestAtMillis = now
             addressJob = scope.launch(Dispatchers.IO) {
                 runCatching { addressResolver.resolve(location.latitude, location.longitude) }
                     .onFailure { Log.w(TAG, "Address lookup failed", it) }
                     .getOrNull()
-                    ?.let { address -> _snapshot.update { it.copy(address = Placed(address, location, clock())) } }
+                    ?.let { address ->
+                        val fetchedAt = clock()
+                        val cached = addressCache.put(address, location, fetchedAt)
+                        if (requestId == addressRequestId) {
+                            _snapshot.update { it.copy(address = Placed(cached.address, cached.near, cached.fetchedAtMillis)) }
+                        }
+                    }
             }
         }
         if (services.weather && needsRefresh(current.weather, location, WEATHER_TTL) && weatherJob?.isActive != true) {
@@ -101,6 +123,7 @@ class EnvironmentRepository(
         const val MAP_MAX_DISTANCE = 15f
         const val WEATHER_MAX_DISTANCE = 3_000f
         const val ADDRESS_TTL = 5 * 60_000L
+        const val ADDRESS_MIN_REFRESH_INTERVAL = 15_000L
         const val WEATHER_TTL = 15 * 60_000L
         const val MAP_TTL = 10 * 60_000L
     }

@@ -34,12 +34,26 @@ data class CameraSettings(
 
 data class LocationSettings(
     val maxAccuracyMeters: Int = 100,
-    val maxAgeSeconds: Int = 120
+    val maxAgeSeconds: Int = 120,
+    val displayRefresh: LocationDisplayRefresh = LocationDisplayRefresh.STABLE,
+    val compassSmoothing: CompassSmoothing = CompassSmoothing.SMOOTH
 ) {
     companion object {
         val ACCURACY_CHOICES = listOf(10, 25, 50, 100, 200)
         val AGE_CHOICES = listOf(30, 60, 120, 300)
     }
+}
+
+enum class LocationDisplayRefresh(val holdMillis: Long) {
+    STABLE(30_000L),
+    BALANCED(10_000L),
+    LIVE(0L)
+}
+
+enum class CompassSmoothing(val alpha: Float) {
+    SMOOTH(0.18f),
+    BALANCED(0.35f),
+    RESPONSIVE(0.65f)
 }
 
 /** Network features. All are off by default and only run after the user opts in. */

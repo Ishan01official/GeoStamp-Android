@@ -149,6 +149,14 @@
     <string name="setting_max_accuracy_summary">Fixes worse than ±%d m are left off the stamp</string>
     <string name="setting_max_age">Maximum location age</string>
     <string name="setting_max_age_summary">Fixes older than %d s are treated as stale</string>
+    <string name="setting_location_refresh">Location display refresh</string>
+    <string name="location_refresh_stable">Stable (30 seconds)</string>
+    <string name="location_refresh_balanced">Balanced (10 seconds)</string>
+    <string name="location_refresh_live">Live</string>
+    <string name="setting_compass_smoothing">Compass smoothing</string>
+    <string name="compass_smoothing_smooth">Smooth</string>
+    <string name="compass_smoothing_balanced">Balanced</string>
+    <string name="compass_smoothing_responsive">Responsive</string>
     <string name="setting_address">Address lookup</string>
     <string name="setting_address_summary">Sends coordinates to your phone\'s geocoding provider. Off by default.</string>
     <string name="setting_map_tiles">Map thumbnails</string>

@@ -7,6 +7,8 @@ import com.geostamp.camera.capture.FlashMode
 import com.geostamp.camera.capture.PhotoAspectRatio
 import com.geostamp.camera.capture.PhotoResolution
 import com.geostamp.camera.settings.MapLinkProvider
+import com.geostamp.camera.settings.CompassSmoothing
+import com.geostamp.camera.settings.LocationDisplayRefresh
 import com.geostamp.camera.settings.ThemeMode
 import com.geostamp.camera.stamps.CoordinateFormat
 import com.geostamp.camera.stamps.StampPosition
@@ -99,4 +101,20 @@ val MapLinkProvider.labelRes: Int
     get() = when (this) {
         MapLinkProvider.OPEN_STREET_MAP -> R.string.map_osm
         MapLinkProvider.GOOGLE_MAPS -> R.string.map_google
+    }
+
+@get:StringRes
+val LocationDisplayRefresh.labelRes: Int
+    get() = when (this) {
+        LocationDisplayRefresh.STABLE -> R.string.location_refresh_stable
+        LocationDisplayRefresh.BALANCED -> R.string.location_refresh_balanced
+        LocationDisplayRefresh.LIVE -> R.string.location_refresh_live
+    }
+
+@get:StringRes
+val CompassSmoothing.labelRes: Int
+    get() = when (this) {
+        CompassSmoothing.SMOOTH -> R.string.compass_smoothing_smooth
+        CompassSmoothing.BALANCED -> R.string.compass_smoothing_balanced
+        CompassSmoothing.RESPONSIVE -> R.string.compass_smoothing_responsive
     }

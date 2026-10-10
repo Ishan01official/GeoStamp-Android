@@ -24,6 +24,7 @@ import com.geostamp.camera.capture.LensFacing
 import com.geostamp.camera.capture.SaveOptions
 import com.geostamp.camera.capture.StampRequest
 import com.geostamp.camera.location.LocationStamp
+import com.geostamp.camera.location.LocationStabilizationPolicy
 import com.geostamp.camera.location.LocationUpdate
 import com.geostamp.camera.settings.AppSettings
 import com.geostamp.camera.settings.CameraSettings
@@ -130,6 +131,18 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         }
         viewModelScope.launch {
             settings.filterNotNull().map { it.camera }.distinctUntilChanged().collect { applyCameraConfig() }
+        }
+        viewModelScope.launch {
+            settings.filterNotNull().map { it.location }.distinctUntilChanged().collect { locationSettings ->
+                locationRepository.setPolicy(
+                    LocationStabilizationPolicy(
+                        maxAccuracyMeters = locationSettings.maxAccuracyMeters.toFloat(),
+                        maxAgeMillis = locationSettings.maxAgeSeconds * 1000L,
+                        displayRefresh = locationSettings.displayRefresh
+                    )
+                )
+                compassRepository.setSmoothing(locationSettings.compassSmoothing)
+            }
         }
         viewModelScope.launch {
             combine(location, settings.filterNotNull()) { update, appSettings -> update to appSettings.services }

@@ -88,6 +88,15 @@ class StampContentBuilderTest {
     }
 
     @Test
+    fun tinySpeedNoiseDisplaysAsStationary() {
+        val prefs = StampPreferences(template = StampTemplate.CLASSIC)
+            .let { it.withFields(it.fields.copy(altitude = false, speed = true)) }
+        val content = builder.build(StampData(0L, location.copy(speedMetersPerSecond = 0.02f)), prefs)
+
+        assertEquals("0 km/h", content.details[2].text)
+    }
+
+    @Test
     fun accuracyWithoutMeasurementIsSkipped() {
         val prefs = StampPreferences(template = StampTemplate.CLASSIC)
         val exifLocation = location.copy(accuracyMeters = Float.NaN)

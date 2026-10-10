@@ -18,6 +18,7 @@ import androidx.compose.material.icons.outlined.CenterFocusStrong
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.ColorLens
+import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.DeleteSweep
 import androidx.compose.material.icons.outlined.Folder
@@ -129,6 +130,22 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onOpenStamp
                         label = { stringResource(R.string.setting_max_age_summary, it) },
                         onSelect = { v -> update { it.copy(location = it.location.copy(maxAgeSeconds = v)) } },
                         icon = Icons.Outlined.Schedule
+                    )
+                    ChoiceRow(
+                        title = stringResource(R.string.setting_location_refresh),
+                        options = LocationDisplayRefresh.entries,
+                        selected = settings.location.displayRefresh,
+                        label = { stringResource(it.labelRes) },
+                        onSelect = { v -> update { it.copy(location = it.location.copy(displayRefresh = v)) } },
+                        icon = Icons.Outlined.GpsFixed
+                    )
+                    ChoiceRow(
+                        title = stringResource(R.string.setting_compass_smoothing),
+                        options = CompassSmoothing.entries,
+                        selected = settings.location.compassSmoothing,
+                        label = { stringResource(it.labelRes) },
+                        onSelect = { v -> update { it.copy(location = it.location.copy(compassSmoothing = v)) } },
+                        icon = Icons.Outlined.Explore
                     )
                     SwitchRow(
                         title = stringResource(R.string.setting_address),
@@ -291,4 +308,3 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onOpenStamp
         }
     }
 }
-

@@ -77,7 +77,7 @@ class StampContentBuilder(
                 add(labels.altitude.format(formatNumber(it, 0)))
             }
             location.speedMetersPerSecond?.takeIf { fields.speed }?.let {
-                add(labels.speed.format(formatNumber(it * METERS_PER_SECOND_TO_KMH, 1)))
+                add(labels.speed.format(formatSpeed(it)))
             }
         }
         return parts.takeIf { it.isNotEmpty() }?.let { StampLine(StampIcon.ALTITUDE, it.joinToString(SEPARATOR)) }
@@ -97,9 +97,15 @@ class StampContentBuilder(
 
     private fun formatNumber(value: Double, decimals: Int): String = "%.${decimals}f".format(Locale.US, value)
 
+    private fun formatSpeed(metersPerSecond: Float): String {
+        val kmh = metersPerSecond * METERS_PER_SECOND_TO_KMH
+        return if (kmh < STATIONARY_SPEED_KMH) "0" else formatNumber(kmh.toDouble(), 1)
+    }
+
     companion object {
         const val SEPARATOR = " · "
         private const val METERS_PER_SECOND_TO_KMH = 3.6
+        private const val STATIONARY_SPEED_KMH = 1.0
         private val EMPTY = StampContent(null, null, emptyList(), showMap = false, showLogo = false, compact = true)
     }
 }
