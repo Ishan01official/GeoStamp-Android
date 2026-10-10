@@ -1,6 +1,7 @@
 package com.geostamp.camera.location
 
 import android.location.Location
+import com.geostamp.camera.maps.LocationUriBuilder
 import java.util.Locale
 
 /** Immutable capture-time location snapshot. Never fabricate missing sensor values. */
@@ -36,11 +37,9 @@ data class LocationStamp(
     fun distanceMetersTo(other: LocationStamp): Float = LocationStabilizer.distanceMeters(this, other)
 
     fun coordinates(): String = String.format(Locale.US, "%.6f, %.6f", latitude, longitude)
-    fun openStreetMapUrl(): String =
-        "https://www.openstreetmap.org/?mlat=$latitude&mlon=$longitude#map=17/$latitude/$longitude"
+    fun openStreetMapUrl(): String = LocationUriBuilder.openStreetMap(latitude, longitude)
 
-    fun googleMapsUrl(): String =
-        "https://www.google.com/maps/search/?api=1&query=$latitude,$longitude"
+    fun googleMapsUrl(): String = LocationUriBuilder.googleMaps(latitude, longitude)
 
     fun providerLabel(): String = provider?.takeIf { it.isNotBlank() } ?: "unknown"
 

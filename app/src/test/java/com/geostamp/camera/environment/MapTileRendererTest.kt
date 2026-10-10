@@ -12,4 +12,13 @@ class MapTileRendererTest {
         val (tx, _) = MapTileRenderer.worldPixel(29.007953, 77.767663, 16)
         assertEquals(46_925, (tx / 256).toInt())
     }
+
+    @Test
+    fun hybridCreditsGoOnSeparateLinesSoNeitherIsCutOff() {
+        assertEquals(
+            listOf("EOxCloudless 2023, Copernicus", "© OpenStreetMap"),
+            MapTileRenderer.attributionLines(com.geostamp.camera.maps.MapType.HYBRID.style.attribution)
+        )
+        assertEquals(listOf("© OpenStreetMap"), MapTileRenderer.attributionLines(com.geostamp.camera.maps.MapType.NORMAL.style.attribution))
+    }
 }

@@ -1,5 +1,7 @@
 package com.geostamp.camera.camera
 
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -49,7 +51,11 @@ import com.geostamp.camera.ui.theme.CameraColors
 import com.geostamp.camera.ui.theme.CameraLabel
 import com.geostamp.camera.ui.theme.Dimens
 
-/** Shows the address that will be stamped and opens the editor. Large target, plain words. */
+/**
+ * Shows the address that will be stamped and opens the editor. The whole bar is the touch target; the edit
+ * icon sits at its upper-right corner, beside the text rather than over it, so long two-line addresses stay
+ * readable and the affordance stays visible.
+ */
 @Composable
 fun AddressBar(detected: String?, override: AddressOverride?, onEdit: () -> Unit, modifier: Modifier = Modifier) {
     val text = override?.text ?: detected ?: stringResource(R.string.address_none_detected)
@@ -58,27 +64,45 @@ fun AddressBar(detected: String?, override: AddressOverride?, onEdit: () -> Unit
         modifier
             .widthIn(max = 520.dp)
             .heightIn(min = Dimens.TouchTarget)
-            .clip(RoundedCornerShape(50))
+            .clip(RoundedCornerShape(Dimens.CornerLarge))
             .background(CameraColors.Scrim)
             .clickable(role = Role.Button, onClick = onEdit)
             .semantics(mergeDescendants = true) { contentDescription = description }
-            .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceXs),
-        verticalAlignment = Alignment.CenterVertically,
+            .padding(start = Dimens.SpaceM, end = Dimens.SpaceS, top = Dimens.SpaceS, bottom = Dimens.SpaceS),
+        verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)
     ) {
-        Icon(Icons.Outlined.Place, contentDescription = null, tint = CameraColors.Content, modifier = Modifier.size(Dimens.IconSmall))
+        Icon(
+            Icons.Outlined.Place,
+            contentDescription = null,
+            tint = CameraColors.Content,
+            modifier = Modifier.padding(top = 2.dp).size(Dimens.IconSmall)
+        )
         Text(
             text,
             style = CameraLabel,
             color = if (override == null && detected == null) CameraColors.ContentMuted else CameraColors.Content,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f, fill = false)
+            modifier = Modifier.weight(1f, fill = false).align(Alignment.CenterVertically)
         )
         if (override != null) {
-            Text(stringResource(R.string.address_edited_badge), style = CameraLabel, color = CameraColors.Warning)
+            Text(
+                stringResource(R.string.address_edited_badge),
+                style = CameraLabel,
+                color = CameraColors.Warning,
+                modifier = Modifier.align(Alignment.CenterVertically)
+            )
         }
-        Icon(Icons.Outlined.Edit, contentDescription = null, tint = CameraColors.Content, modifier = Modifier.size(Dimens.IconSmall))
+        Box(
+            Modifier
+                .size(Dimens.IconSmall + Dimens.SpaceS)
+                .clip(CircleShape)
+                .background(CameraColors.Scrim),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(Icons.Outlined.Edit, contentDescription = null, tint = CameraColors.Content, modifier = Modifier.size(Dimens.IconSmall - 4.dp))
+        }
     }
 }
 

@@ -18,6 +18,7 @@ import androidx.media3.transformer.ExportResult
 import androidx.media3.transformer.ProgressHolder
 import androidx.media3.transformer.Transformer
 import androidx.media3.transformer.VideoEncoderSettings
+import com.geostamp.camera.dual.PipFrame
 import com.geostamp.camera.stamps.StampContentBuilder
 import com.geostamp.camera.stamps.StampData
 import com.geostamp.camera.stamps.StampRenderer
@@ -117,6 +118,7 @@ class VideoStampProcessor(
         val data = (sample?.data ?: StampData(capturedAtMillis = request.startedAtMillis))
             .copy(capturedAtMillis = request.stampTimeAt(presentationTimeUs))
         val content = builder.build(data, request.preferences, mapAvailable = sample?.map != null, logoAvailable = sample?.logo != null)
+        request.pipFrame?.let { PipFrame.draw(canvas, width.toFloat(), height.toFloat(), it) }
         stampRenderer.render(canvas, width, height, content, style, sample?.map, sample?.logo)
     }
 

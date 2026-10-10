@@ -7,6 +7,7 @@ import com.geostamp.camera.capture.CaptureMode
 import com.geostamp.camera.capture.FlashMode
 import com.geostamp.camera.capture.PhotoAspectRatio
 import com.geostamp.camera.capture.PhotoResolution
+import com.geostamp.camera.maps.MapType
 import com.geostamp.camera.settings.MapLinkProvider
 import com.geostamp.camera.settings.CompassSmoothing
 import com.geostamp.camera.settings.LocationDisplayRefresh
@@ -65,6 +66,7 @@ val StampTemplate.labelRes: Int
         StampTemplate.CLASSIC -> R.string.template_classic
         StampTemplate.MAP_CARD -> R.string.template_map_card
         StampTemplate.PROFESSIONAL -> R.string.template_professional
+        StampTemplate.QR_LOCATION -> R.string.template_qr_location
     }
 
 @get:StringRes
@@ -127,4 +129,13 @@ val CompassSmoothing.labelRes: Int
         CompassSmoothing.SMOOTH -> R.string.compass_smoothing_smooth
         CompassSmoothing.BALANCED -> R.string.compass_smoothing_balanced
         CompassSmoothing.RESPONSIVE -> R.string.compass_smoothing_responsive
+    }
+
+@get:StringRes
+val MapType.labelRes: Int
+    get() = when (this) {
+        MapType.NORMAL -> R.string.map_type_normal
+        MapType.SATELLITE -> R.string.map_type_satellite
+        MapType.TERRAIN -> R.string.map_type_terrain
+        MapType.HYBRID -> R.string.map_type_hybrid
     }

@@ -3,6 +3,7 @@ package com.geostamp.camera.environment
 import android.graphics.Bitmap
 import android.util.Log
 import com.geostamp.camera.location.LocationStamp
+import com.geostamp.camera.maps.MapType
 import com.geostamp.camera.settings.OnlineServices
 import com.geostamp.camera.stamps.WeatherReading
 import kotlinx.coroutines.CoroutineScope
@@ -44,6 +45,7 @@ class EnvironmentRepository(
     private var addressRequestId = 0L
     private var lastAddressRequestAtMillis = 0L
     @Volatile private var addressDetail = AddressDetail.DETAILED
+    @Volatile private var mapType: MapType? = null
 
     fun onLocation(location: LocationStamp, services: OnlineServices, detail: AddressDetail = AddressDetail.DETAILED) {
         addressDetail = detail
@@ -55,6 +57,12 @@ class EnvironmentRepository(
         }
         if (!services.weather) _snapshot.update { it.copy(weather = null) }
         if (!services.mapTiles) _snapshot.update { it.copy(map = null) }
+        if (services.mapType != mapType) {
+            // A thumbnail in the previous style must not appear on the next photo.
+            mapType = services.mapType
+            mapJob?.cancel()
+            _snapshot.update { it.copy(map = null) }
+        }
 
         val now = clock()
         if (services.addressLookup) {
@@ -96,11 +104,13 @@ class EnvironmentRepository(
                     ?.let { weather -> _snapshot.update { it.copy(weather = Placed(weather, location, clock())) } }
             }
         }
-        if (services.mapTiles && needsRefresh(current.map, location, MAP_TTL, MAP_MAX_DISTANCE) && mapJob?.isActive != true) {
+        if (services.mapTiles && needsRefresh(_snapshot.value.map, location, MAP_TTL, MAP_MAX_DISTANCE) && mapJob?.isActive != true) {
+            val type = services.mapType
             mapJob = scope.launch(Dispatchers.IO) {
-                runCatching { mapTileRenderer.render(location.latitude, location.longitude) }
+                runCatching { mapTileRenderer.render(location.latitude, location.longitude, type) }
                     .onFailure { Log.w(TAG, "Map tiles failed", it) }
                     .getOrNull()
+                    ?.takeIf { type == mapType }
                     ?.let { map -> _snapshot.update { it.copy(map = Placed(map, location, clock())) } }
             }
         }

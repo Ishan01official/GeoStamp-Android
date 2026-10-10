@@ -1,5 +1,6 @@
 package com.geostamp.camera.stamps
 
+import com.geostamp.camera.qr.QrLocationEncoder
 import com.geostamp.camera.sensors.HeadingFormatter
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -42,7 +43,8 @@ class StampContentBuilder(
             },
             showLogo = fields.logo && logoAvailable,
             compact = preferences.template.compact,
-            panelCoordinates = data.location?.let { CoordinateFormatter.panelLines(it.latitude, it.longitude) }.orEmpty()
+            panelCoordinates = data.location?.let { CoordinateFormatter.panelLines(it.latitude, it.longitude) }.orEmpty(),
+            qrPayload = data.location?.takeIf { fields.qrCode }?.let { QrLocationEncoder.payload(it.latitude, it.longitude) }
         )
     }
 
@@ -53,7 +55,11 @@ class StampContentBuilder(
     private fun coordinatesLine(data: StampData, fields: StampFields, preferences: StampPreferences): StampLine? {
         if (!fields.coordinates) return null
         val location = data.location ?: return null
-        val text = CoordinateFormatter.format(location.latitude, location.longitude, preferences.coordinateFormat)
+        val text = if (preferences.template == StampTemplate.QR_LOCATION && preferences.coordinateFormat == CoordinateFormat.DECIMAL) {
+            labels.latitudeLongitude.format(formatNumber(location.latitude, 6), formatNumber(location.longitude, 6))
+        } else {
+            CoordinateFormatter.format(location.latitude, location.longitude, preferences.coordinateFormat)
+        }
         return StampLine(StampIcon.COORDINATES, text, StampLine.Emphasis.PRIMARY)
     }
 

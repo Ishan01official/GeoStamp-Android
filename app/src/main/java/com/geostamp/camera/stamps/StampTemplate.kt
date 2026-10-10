@@ -12,7 +12,9 @@ data class StampFields(
     val weather: Boolean = false,
     val map: Boolean = false,
     val customText: Boolean = true,
-    val logo: Boolean = true
+    val logo: Boolean = true,
+    /** A scannable code that opens the captured coordinates in a map app. Needs a location fix. */
+    val qrCode: Boolean = false
 )
 
 enum class StampTemplate(val defaultFields: StampFields, val compact: Boolean) {
@@ -40,6 +42,12 @@ enum class StampTemplate(val defaultFields: StampFields, val compact: Boolean) {
             weather = true,
             map = true
         ),
+        compact = false
+    ),
+
+    /** Place, date, coordinates and a QR code that opens the exact spot on another phone. */
+    QR_LOCATION(
+        defaultFields = StampFields(dateTime = true, address = true, coordinates = true, map = true, logo = false, qrCode = true),
         compact = false
     );
 

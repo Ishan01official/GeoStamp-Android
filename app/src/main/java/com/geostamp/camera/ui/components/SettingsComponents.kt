@@ -36,6 +36,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -50,7 +52,7 @@ fun SettingsSection(title: String, modifier: Modifier = Modifier, content: @Comp
             text = title,
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(start = Dimens.SpaceXs, bottom = Dimens.SpaceS)
+            modifier = Modifier.padding(start = Dimens.SpaceXs, bottom = Dimens.SpaceS).semantics { heading() }
         )
         Surface(
             shape = RoundedCornerShape(Dimens.CornerMedium),

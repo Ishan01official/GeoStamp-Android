@@ -1,7 +1,6 @@
 package com.geostamp.camera.gallery
 
 import android.app.Activity
-import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.net.Uri
 import android.text.format.DateFormat
@@ -26,6 +25,7 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.EditLocationAlt
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Map
+import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -65,7 +65,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.geostamp.camera.R
 import com.geostamp.camera.camera.AddressEditDialog
-import com.geostamp.camera.location.LocationStamp
+import com.geostamp.camera.maps.MapLauncher
+import com.geostamp.camera.qr.LocationQrSheet
 import com.geostamp.camera.settings.MapLinkProvider
 import com.geostamp.camera.ui.components.InfoRow
 import com.geostamp.camera.ui.theme.CameraColors
@@ -95,6 +96,8 @@ fun MediaViewerScreen(
     FullscreenEffect(enabled = fullscreen, landscapeVideo = item?.let { it.isVideo && it.width > it.height } == true)
     LaunchedEffect(uri) { metadata = viewModel.metadata(uri) }
     var showInfo by remember { mutableStateOf(false) }
+    var showQr by remember { mutableStateOf(false) }
+    val noMapApp = stringResource(R.string.qr_no_map_app)
     var editAddress by remember { mutableStateOf(false) }
     val editedMessage = stringResource(R.string.address_edit_saved)
     val editFailedMessage = stringResource(R.string.address_edit_failed)
@@ -110,7 +113,8 @@ fun MediaViewerScreen(
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
 
-    LaunchedEffect(Unit) { if (state.items.isEmpty()) viewModel.refresh() }
+    // Opened from the camera's "View", the new capture may not be in the list yet; without it nothing is drawn.
+    LaunchedEffect(uri) { viewModel.ensureLoaded(uri) }
 
     Box(Modifier.fillMaxSize().background(CameraColors.Background)) {
         if (item?.isVideo == true) {
@@ -173,13 +177,11 @@ fun MediaViewerScreen(
             val lon = metadata?.longitude
             if (lat != null && lon != null) {
                 ViewerAction(Icons.Outlined.Map, stringResource(R.string.action_open_map)) {
-                    val stamp = LocationStamp(lat, lon, Float.NaN, 0L, null, null)
-                    val url = when (mapLinkProvider) {
-                        MapLinkProvider.OPEN_STREET_MAP -> stamp.openStreetMapUrl()
-                        MapLinkProvider.GOOGLE_MAPS -> stamp.googleMapsUrl()
+                    if (!MapLauncher.open(context, lat, lon, mapLinkProvider)) {
+                        Toast.makeText(context, noMapApp, Toast.LENGTH_LONG).show()
                     }
-                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                 }
+                ViewerAction(Icons.Outlined.QrCode2, stringResource(R.string.action_show_location_qr)) { showQr = true }
             }
             if (item?.isVideo == false) {
                 ViewerAction(Icons.Outlined.EditLocationAlt, stringResource(R.string.address_edit_title)) { editAddress = true }
@@ -224,6 +226,18 @@ fun MediaViewerScreen(
                 }
             }
         }
+    }
+
+    val qrLatitude = metadata?.latitude
+    val qrLongitude = metadata?.longitude
+    if (showQr && qrLatitude != null && qrLongitude != null) {
+        LocationQrSheet(
+            latitude = qrLatitude,
+            longitude = qrLongitude,
+            address = null,
+            mapLinkProvider = mapLinkProvider,
+            onDismiss = { showQr = false }
+        )
     }
 
     if (editAddress && item != null) {

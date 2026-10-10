@@ -45,6 +45,7 @@ class AppContainer(context: Context) {
 
     val settingsRepository = SettingsRepository(appContext)
     val addressOverrides = AddressOverrideRepository()
+    val sessionPreferences = SessionPreferences()
     val cameraCapabilityRepository = CameraCapabilityRepository(appContext)
     val locationRepository = LocationRepository(ForegroundLocationTracker(appContext))
     val compassRepository = CompassRepository(CompassMonitor(appContext))
@@ -73,6 +74,12 @@ class AppContainer(context: Context) {
         scope = applicationScope
     )
     val batchStamper = BatchStamper(appContext.contentResolver, photoProcessor, mediaStoreWriter, environmentRepository)
+}
+
+/** Choices that last until the app process ends and are deliberately not saved to disk. */
+class SessionPreferences {
+    /** Video and Dual Video record sound unless the user mutes them. */
+    val microphoneEnabled = kotlinx.coroutines.flow.MutableStateFlow(true)
 }
 
 val Context.appContainer: AppContainer
