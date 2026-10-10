@@ -6,7 +6,6 @@ import androidx.camera.core.Preview
 import androidx.camera.video.Recording
 import androidx.camera.video.VideoRecordEvent
 import androidx.lifecycle.LifecycleOwner
-import com.geostamp.camera.camera.CameraCapabilities
 import com.geostamp.camera.capture.CaptureMode
 import com.geostamp.camera.capture.PhotoProcessor
 import com.geostamp.camera.capture.ProcessedPhoto
@@ -38,8 +37,7 @@ data class DualUiState(
  */
 class DualCaptureController(
     private val session: DualCameraSession,
-    private val photoProcessor: PhotoProcessor,
-    private val capabilities: () -> CameraCapabilities
+    private val photoProcessor: PhotoProcessor
 ) {
     private val _state = MutableStateFlow(DualUiState())
     val state: StateFlow<DualUiState> = _state.asStateFlow()
@@ -94,12 +92,16 @@ class DualCaptureController(
             _state.value.inset.rect(PHOTO_FRAME_ASPECT, stampPosition)
         }
 
+    /**
+     * CameraX 1.5 applies composition after rotating to the display orientation: measured on the A142
+     * (rear sensor at 90°), offsets (-0.6,-0.6), (-0.6,0.6) and (0,-0.6) put the inset centre at upright
+     * (0.2,0.8), (0.2,0.2) and (0.5,0.8). So the upright rectangle is passed through without rotation.
+     */
     private fun videoInsetNdc(stampPosition: StampPosition): NdcPlacement {
-        // Portrait display: the composed buffer is in the rear sensor's orientation.
-        val rearOrientation = capabilities().cameras
-            .firstOrNull { it.lensFacing == android.hardware.camera2.CameraCharacteristics.LENS_FACING_BACK }
-            ?.sensorOrientation ?: DEFAULT_SENSOR_ORIENTATION
-        return CompositionMapping.toNdc(previewInset(CaptureMode.DUAL_VIDEO, stampPosition), rearOrientation)
+        val rect = previewInset(CaptureMode.DUAL_VIDEO, stampPosition)
+        return CompositionMapping.toNdc(rect, bufferRotationDegrees = 0).also {
+            Log.i(TAG, "Dual video inset ${_state.value.inset} rect=$rect ndc=$it")
+        }
     }
 
     private fun Bitmap.jpegBytes(): ByteArray =
@@ -112,7 +114,6 @@ class DualCaptureController(
 
         /** The front stream is 16:9; a 9:16 inset shows it without stretching. */
         const val VIDEO_INSET_ASPECT = 9f / 16f
-        private const val DEFAULT_SENSOR_ORIENTATION = 90
         private const val ORIGINAL_QUALITY = 95
     }
 }

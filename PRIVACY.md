@@ -1,5 +1,7 @@
 # GeoStamp privacy
 
+Updated: 2026-10-10. Describes the current source implementation.
+
 GeoStamp has no advertising, analytics, crash reporting or account SDKs. Photos and videos are processed on the device and saved to `Pictures/GeoStamp` and `Movies/GeoStamp`. Nothing is uploaded automatically, and app data is excluded from cloud backup and device transfer.
 
 ## Permissions
@@ -8,10 +10,15 @@ GeoStamp has no advertising, analytics, crash reporting or account SDKs. Photos 
 |---|---|---|
 | Camera | Take photos and videos | Required for the camera screen |
 | Location (precise or approximate) | Coordinates, accuracy and true-north heading on stamps | Optional. Foreground only, while the camera screen is open. No background location |
-| Microphone | Sound in videos | Optional. Requested when switching to Video. Videos record silently without it |
-| Internet | Only for the optional online features below | Never used unless you turn a feature on |
+| Microphone | Sound in videos | Optional. Requested when switching to Video. Videos record silently without it, and the app says so while recording |
+| Internet | Address lookup, map thumbnails and optional weather | Address and map requests can run after location permission is granted; weather requires enabling its setting |
 
-## Optional online features (all off by default)
+## Online features
+
+Address lookup and map thumbnails are on by default. They run for available
+foreground camera locations after location permission is granted. You can disable
+either in Settings, and saved off choices remain off across updates. Weather is
+off by default. Capturing photos and videos does not require a network connection.
 
 | Feature | Sent to | Data sent |
 |---|---|---|
@@ -19,12 +26,31 @@ GeoStamp has no advertising, analytics, crash reporting or account SDKs. Photos 
 | Map thumbnails | OpenStreetMap tile servers (`tile.openstreetmap.org`) | The map tiles around your position, which reveal approximate location. Tiles are cached on the device for 7 days |
 | Weather | Open-Meteo (`api.open-meteo.com`) | Coordinates rounded to 3 decimals (about 100 m) |
 
-Results are fetched in the background and only used for photos taken near the place they were fetched for. The shutter never waits for the network, and missing data is left off the stamp rather than guessed.
+Results are prefetched asynchronously while the camera is in use and only used for captures near the place they were fetched for. This does not request background location. The shutter never waits for the network, and missing data is left off the stamp rather than guessed.
 
 ## Metadata
 
-- Visible stamps can include precise coordinates and time. Review photos before sharing.
+- Visible stamps can include precise coordinates, addresses and time. Review photos and videos before sharing.
 - Writing GPS coordinates into EXIF metadata is a separate setting and is **off** by default. When it is off, GeoStamp removes GPS tags from the photos it saves.
 - "Keep unstamped original" saves a second, unstamped copy. It follows the same EXIF setting.
 
 This document describes the source implementation; it is not an independent security audit.
+
+## Video, addresses and diagnostics
+
+- Videos are stamped on the phone. The raw recording stays in app-private storage until the stamped copy is checked and saved, and is then deleted unless "Keep unstamped original" is on.
+- A typed address is held in memory only, for the next capture or until the app closes. It is never sent anywhere. Photos with a typed address are marked as such in their EXIF comment.
+- The Camera diagnostics report stays on the phone unless you choose Share.
+
+
+## User-initiated sharing and map links
+
+Sharing sends only the selected media or diagnostics report through Android's
+share sheet to the destination you choose. Opening a saved photo in Google Maps
+or OpenStreetMap passes its recorded coordinates to that destination. The map
+button is available only when the photo has GPS metadata; GPS EXIF writing is
+separate from the visible stamp and remains off by default.
+
+Custom logos are selected through Android Photo Picker for local stamp rendering.
+Deleting an item uses MediaStore and requests Android's deletion consent when
+required. Stored preferences are kept locally in DataStore.

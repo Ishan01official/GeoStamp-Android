@@ -21,6 +21,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.geostamp.camera.capture.CaptureMode
+import com.geostamp.camera.dual.DualCaptureController
 import com.geostamp.camera.stamps.StampPosition
 
 /**
@@ -40,7 +41,8 @@ fun DualViewfinder(viewModel: CameraViewModel, mode: CaptureMode, stampPosition:
             implementationMode = PreviewView.ImplementationMode.COMPATIBLE
         }
     }
-    val videoInsetKey = if (mode == CaptureMode.DUAL_VIDEO) dualState.inset else null
+    val inset = dualState.inset
+    val videoInsetKey = if (mode == CaptureMode.DUAL_VIDEO) inset else null
 
     LaunchedEffect(mode, videoInsetKey, stampPosition) {
         viewModel.bindDual(owner, mainView.surfaceProvider, if (mode == CaptureMode.DUAL_PHOTO) frontView.surfaceProvider else null)
@@ -50,7 +52,7 @@ fun DualViewfinder(viewModel: CameraViewModel, mode: CaptureMode, stampPosition:
     BoxWithConstraints(Modifier.fillMaxSize()) {
         AndroidView(factory = { mainView }, modifier = Modifier.fillMaxSize())
         if (mode == CaptureMode.DUAL_PHOTO) {
-            val rect = viewModel.dual.previewInset(mode, stampPosition)
+            val rect = inset.rect(DualCaptureController.PHOTO_FRAME_ASPECT, stampPosition)
             val shape = RoundedCornerShape(12.dp)
             AndroidView(
                 factory = { frontView },

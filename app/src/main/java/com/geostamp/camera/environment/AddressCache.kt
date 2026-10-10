@@ -4,7 +4,7 @@ import com.geostamp.camera.location.LocationStabilizer
 import com.geostamp.camera.location.LocationStamp
 
 data class CachedAddress(
-    val address: String,
+    val parts: AddressParts,
     val near: LocationStamp,
     val fetchedAtMillis: Long
 )
@@ -17,6 +17,7 @@ class AddressCache(
 ) {
     private val entries = ArrayDeque<CachedAddress>()
 
+    @Synchronized
     fun get(location: LocationStamp, nowMillis: Long): CachedAddress? {
         val match = entries
             .asSequence()
@@ -30,8 +31,9 @@ class AddressCache(
         return match
     }
 
-    fun put(address: String, location: LocationStamp, fetchedAtMillis: Long): CachedAddress {
-        val cached = CachedAddress(address, location, fetchedAtMillis)
+    @Synchronized
+    fun put(parts: AddressParts, location: LocationStamp, fetchedAtMillis: Long): CachedAddress {
+        val cached = CachedAddress(parts, location, fetchedAtMillis)
         entries.removeAll { LocationStabilizer.distanceMeters(it.near, location) <= maxDistanceMeters }
         entries.addFirst(cached)
         trim(fetchedAtMillis)
@@ -46,6 +48,6 @@ class AddressCache(
     companion object {
         private const val DEFAULT_MAX_ENTRIES = 24
         private const val DEFAULT_TTL_MILLIS = 30 * 60_000L
-        private const val DEFAULT_MAX_DISTANCE_METERS = 60f
+        private const val DEFAULT_MAX_DISTANCE_METERS = 10f
     }
 }

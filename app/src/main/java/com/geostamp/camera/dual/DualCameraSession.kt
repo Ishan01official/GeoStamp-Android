@@ -47,14 +47,22 @@ class DualCameraSession(context: Context) {
     private var rearCapture: ImageCapture? = null
     private var frontCapture: ImageCapture? = null
     private var videoCapture: VideoCapture<Recorder>? = null
+    private var bindingOwner: BindingLifecycleOwner? = null
+
+    /** A fresh owner per bind so CameraX builds a new concurrent camera with the current settings. */
+    private fun freshOwner(parent: LifecycleOwner): LifecycleOwner {
+        bindingOwner?.destroy()
+        return BindingLifecycleOwner(parent).also { bindingOwner = it }
+    }
 
     private suspend fun provider(): ProcessCameraProvider =
         provider ?: ProcessCameraProvider.awaitInstance(appContext).also { provider = it }
 
     /** Each camera gets its own preview and still capture. */
-    suspend fun bindPhoto(owner: LifecycleOwner, rearSurface: Preview.SurfaceProvider, frontSurface: Preview.SurfaceProvider) {
+    suspend fun bindPhoto(parentOwner: LifecycleOwner, rearSurface: Preview.SurfaceProvider, frontSurface: Preview.SurfaceProvider) {
         val cameraProvider = provider()
         cameraProvider.unbindAll()
+        val owner = freshOwner(parentOwner)
         val ratio = ResolutionSelector.Builder().setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY).build()
         fun preview(surface: Preview.SurfaceProvider) = Preview.Builder().setResolutionSelector(ratio).build().also { it.surfaceProvider = surface }
         fun still() = ImageCapture.Builder()
@@ -74,9 +82,10 @@ class DualCameraSession(context: Context) {
     }
 
     /** One preview and one recording composed by CameraX: rear full frame, front as picture-in-picture. */
-    suspend fun bindVideo(owner: LifecycleOwner, surface: Preview.SurfaceProvider, inset: NdcPlacement) {
+    suspend fun bindVideo(parentOwner: LifecycleOwner, surface: Preview.SurfaceProvider, inset: NdcPlacement) {
         val cameraProvider = provider()
         cameraProvider.unbindAll()
+        val owner = freshOwner(parentOwner)
         val ratio = ResolutionSelector.Builder().setAspectRatioStrategy(AspectRatioStrategy.RATIO_16_9_FALLBACK_AUTO_STRATEGY).build()
         val preview = Preview.Builder().setResolutionSelector(ratio).build().also { it.surfaceProvider = surface }
         val recorder = Recorder.Builder()
@@ -123,6 +132,8 @@ class DualCameraSession(context: Context) {
 
     fun unbind() {
         provider?.unbindAll()
+        bindingOwner?.destroy()
+        bindingOwner = null
         rearCapture = null
         frontCapture = null
         videoCapture = null

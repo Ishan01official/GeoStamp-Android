@@ -87,7 +87,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private fun renderPreview(appSettings: AppSettings, logoBitmap: Bitmap?): Bitmap {
         val bitmap = sampleScene()
         val live = container.locationRepository.latestLocation
-        val nearby = container.environmentRepository.forCapture(live)
+        val nearby = container.environmentRepository.forCapture(live, appSettings.location.addressDetail)
         val data = StampData(
             capturedAtMillis = System.currentTimeMillis(),
             location = live ?: SAMPLE_LOCATION,

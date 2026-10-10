@@ -149,9 +149,9 @@
     <string name="compass_smoothing_balanced">Balanced</string>
     <string name="compass_smoothing_responsive">Responsive</string>
     <string name="setting_address">Address lookup</string>
-    <string name="setting_address_summary">Sends coordinates to your phone\'s geocoding provider. Off by default.</string>
+    <string name="setting_address_summary">Sends coordinates to your phone\'s geocoding provider. On by default; you can turn it off.</string>
     <string name="setting_map_tiles">Map thumbnails</string>
-    <string name="setting_map_tiles_summary">Downloads OpenStreetMap tiles for the stamp\'s mini map. Off by default.</string>
+    <string name="setting_map_tiles_summary">Downloads OpenStreetMap tiles for the stamp\'s mini map. On by default; you can turn it off.</string>
     <string name="setting_map_link">Open locations in</string>
     <string name="map_osm">OpenStreetMap</string>
     <string name="map_google">Google Maps</string>
@@ -280,8 +280,10 @@
     <string name="address_edit_note">GPS coordinates are not changed. The photo\'s details will show that the address was entered manually.</string>
     <string name="address_restore">Use detected address</string>
     <string name="save">Save</string>
-    <string name="setting_house_numbers">Show house numbers</string>
-    <string name="setting_house_numbers_summary">Only when two lookups agree with a precise fix. Map services often guess house numbers wrongly.</string>
+    <string name="setting_address_detail">Address detail</string>
+    <string name="address_detail_detailed">Detailed</string>
+    <string name="address_detail_standard">Standard</string>
+    <string name="address_detail_short">Short</string>
     <string name="info_address_source">Address</string>
     <string name="info_address_manual">Entered manually</string>
     <string name="info_address_detected">Detected from location</string>

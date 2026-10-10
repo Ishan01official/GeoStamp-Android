@@ -37,7 +37,8 @@ class VideoStampPipelineTest {
 
     @Test
     fun stampsRealRecordingsAndKeepsAudioDurationAndOrientation() = runBlocking {
-        val dir = File(context.getExternalFilesDir(null), "verify").apply { mkdirs() }
+        val dir = (InstrumentationRegistry.getArguments().getString("videoFixtureDirectory")?.let(::File)
+            ?: File(context.getExternalFilesDir(null), "verify")).apply { mkdirs() }
         val inputs = dir.listFiles { file -> file.name.startsWith("input_") && file.name.endsWith(".mp4") }.orEmpty().sortedBy { it.name }
         assumeTrue("No input videos pushed to $dir", inputs.isNotEmpty())
 

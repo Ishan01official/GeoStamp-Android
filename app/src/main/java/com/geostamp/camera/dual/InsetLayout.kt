@@ -22,7 +22,8 @@ data class NormalizedRect(val left: Float, val top: Float, val right: Float, val
  * Where the front-camera picture-in-picture sits. Moving and resizing use simple taps (next corner, next
  * size) instead of precise drags. The inset is always kept out of the band the stamp card occupies.
  */
-data class InsetLayout(val corner: InsetCorner = InsetCorner.TOP_END, val size: InsetSize = InsetSize.MEDIUM) {
+/** Defaults to the top-left corner, away from the side control rail on the right. */
+data class InsetLayout(val corner: InsetCorner = InsetCorner.TOP_START, val size: InsetSize = InsetSize.MEDIUM) {
     /**
      * @param frameAspect upright frame width / height, e.g. 3/4 or 9/16.
      * @param insetAspect inset width / height; the front camera is shown in portrait 3:4.

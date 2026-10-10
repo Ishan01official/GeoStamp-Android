@@ -120,9 +120,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     val session = CameraSession(application)
 
     /** Simultaneous front + rear capture, used only where the hardware supports it. */
-    val dual = DualCaptureController(DualCameraSession(application), container.photoProcessor) {
-        container.cameraCapabilityRepository.capabilities()
-    }
+    val dual = DualCaptureController(DualCameraSession(application), container.photoProcessor)
 
     /** Post-recording stamping progress, shared with the app-wide video coordinator. */
     val videoJob: StateFlow<VideoJobState> = container.videoCapture.state
@@ -136,8 +134,8 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     val addressOverride: StateFlow<AddressOverride?> = addressOverrides.override
 
     /** The automatically detected address for the current stable location, shown in the edit dialog. */
-    val detectedAddress: StateFlow<String?> = combine(location, environment.snapshot) { update, _ ->
-        environment.forCapture((update as? LocationUpdate.Available)?.location).address?.value
+    val detectedAddress: StateFlow<String?> = combine(location, environment.snapshot, settings.filterNotNull()) { update, _, appSettings ->
+        environment.forCapture((update as? LocationUpdate.Available)?.location, appSettings.location.addressDetail).address?.value
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT), null)
 
     /**
@@ -217,8 +215,8 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
                 .collect { (update, appSettings) ->
                     val fix = (update as? LocationUpdate.Available)?.location
                     compassRepository.setReferenceLocation(fix)
-                    if (fix != null && appSettings.services.anyEnabled) {
-                        environment.onLocation(fix, appSettings.services, appSettings.location.showHouseNumbers)
+                    if (fix != null) {
+                        environment.onLocation(fix, appSettings.services, appSettings.location.addressDetail)
                     }
                 }
         }
@@ -289,13 +287,16 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
             return
         }
         cancelCountdown()
+        // Release the concurrent cameras before the single-camera preview is re-attached by Compose.
+        // Otherwise CameraX is still in concurrent mode when PreviewView attaches and it throws.
+        if (_capture.value.mode.isDual() && !mode.isDual()) dual.unbind()
         _capture.update { it.copy(mode = mode) }
         applyCameraConfig()
     }
 
     fun switchLens() {
         val state = _capture.value
-        if (state.recordingSeconds != null || !state.hasFrontCamera) return
+        if (state.recordingSeconds != null || !state.hasFrontCamera || state.mode.isDual()) return
         val next = if (state.lens == LensFacing.BACK) LensFacing.FRONT else LensFacing.BACK
         _capture.update { it.copy(lens = next) }
         applyCameraConfig()
@@ -367,7 +368,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         val appSettings = settings.value ?: return null
         val capturedAt = System.currentTimeMillis()
         val fix = usableLocation(appSettings, capturedAt)
-        val nearby = environment.forCapture(fix)
+        val nearby = environment.forCapture(fix, appSettings.location.addressDetail)
         val address = stampAddress(nearby.address?.value)
         addressOverrides.onCaptureCompleted()
         val request = StampRequest(
@@ -545,7 +546,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     private fun videoStampSample(startedAtMillis: Long, nowMillis: Long): VideoStampSample {
         val appSettings = settings.value
         val fix = appSettings?.let { usableDisplayLocation(it, nowMillis) }
-        val nearby = environment.forCapture(fix)
+        val nearby = environment.forCapture(fix, appSettings?.location?.addressDetail ?: com.geostamp.camera.environment.AddressDetail.DETAILED)
         val address = stampAddress(nearby.address?.value)
         return VideoStampSample(
             elapsedMillis = (nowMillis - startedAtMillis).coerceAtLeast(0L),
@@ -625,7 +626,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         val (width, height) = input.size ?: return null
         if (!input.settings.camera.liveStampPreview || !input.settings.stamp.enabled) return null
         val fix = usableDisplayLocation(input.settings, input.nowMillis)
-        val nearby = environment.forCapture(fix)
+        val nearby = environment.forCapture(fix, input.settings.location.addressDetail)
         val scale = (LIVE_STAMP_MAX_EDGE.toFloat() / maxOf(width, height)).coerceAtMost(1f)
         val bitmap = Bitmap.createBitmap((width * scale).toInt().coerceAtLeast(1), (height * scale).toInt().coerceAtLeast(1), Bitmap.Config.ARGB_8888)
         val address = stampAddress(nearby.address?.value)

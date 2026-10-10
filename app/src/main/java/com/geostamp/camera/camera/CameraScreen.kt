@@ -257,6 +257,8 @@ private fun CameraScreen(
     val gpsNotReady by viewModel.gpsNotReady.collectAsStateWithLifecycle()
     val videoJob by viewModel.videoJob.collectAsStateWithLifecycle()
     val savedWithoutGps = stringResource(R.string.gps_not_ready_saved)
+    val isRecording = capture.recordingSeconds != null
+    LaunchedEffect(isRecording) { if (isRecording) snackbar.currentSnackbarData?.dismiss() }
     val savedPhoto = stringResource(R.string.saved_photo)
     val savedVideo = stringResource(R.string.saved_video)
     val viewAction = stringResource(R.string.action_view)
@@ -270,7 +272,12 @@ private fun CameraScreen(
                 }
                 is CameraEvent.Saved -> scope.launch {
                     snackbar.currentSnackbarData?.dismiss()
-                    val result = snackbar.showSnackbar(if (event.isVideo) savedVideo else savedPhoto, actionLabel = viewAction)
+                    // With an action, Material 3 defaults to an indefinite snackbar; time it out instead.
+                    val result = snackbar.showSnackbar(
+                        if (event.isVideo) savedVideo else savedPhoto,
+                        actionLabel = viewAction,
+                        duration = SnackbarDuration.Short
+                    )
                     if (result == SnackbarResult.ActionPerformed) onOpenMedia(event.uri)
                 }
                 CameraEvent.SavedWithoutGps -> scope.launch {
@@ -407,6 +414,17 @@ private fun CameraScreen(
             modifier = Modifier.align(Alignment.BottomCenter)
         )
 
+        // Recording status sits at the top of the picture where nothing overlaps it.
+        RecordingBadge(
+            capture.recordingSeconds,
+            VideoLimits.MAX_DURATION_SECONDS,
+            capture.recordingHasAudio,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .statusBarsPadding()
+                .padding(top = (if (stacked) TOP_BAR_HEIGHT else 56.dp) + Dimens.SpaceS)
+        )
+
         SnackbarHost(
             snackbar,
             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 180.dp)
@@ -486,7 +504,6 @@ private fun BottomControls(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)
     ) {
-        RecordingBadge(capture.recordingSeconds, VideoLimits.MAX_DURATION_SECONDS, capture.recordingHasAudio)
         (videoJob as? VideoJobState.Stamping)?.let { VideoStampingCard(it.progressPercent, onCancel = viewModel::cancelVideoStamping) }
         when {
             capture.mode.isPhotoMode() && !stampEnabled ->
@@ -495,7 +512,7 @@ private fun BottomControls(
                 CameraChip(stringResource(R.string.gps_not_ready), icon = Icons.Outlined.GpsNotFixed, iconTint = CameraColors.Warning)
         }
         addressBar?.invoke()
-        if (!simpleMode) {
+        if (!simpleMode && !capture.mode.isDual()) {
             ZoomSelector(presets = zoomPresets, current = zoomRatio, onSelect = viewModel::setZoom)
         }
         ModeSelector(
@@ -513,7 +530,7 @@ private fun BottomControls(
             countdownActive = capture.countdown != null,
             isProcessing = capture.isProcessing,
             thumbnail = capture.lastCapture?.thumbnail,
-            canSwitchCamera = capture.hasFrontCamera,
+            canSwitchCamera = capture.hasFrontCamera && !capture.mode.isDual(),
             iconRotation = iconRotation,
             onShutter = viewModel::onShutter,
             onOpenGallery = onOpenGallery,
