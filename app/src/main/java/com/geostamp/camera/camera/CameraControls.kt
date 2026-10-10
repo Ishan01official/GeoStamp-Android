@@ -13,10 +13,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -27,6 +28,8 @@ import androidx.compose.material.icons.outlined.FlashOn
 import androidx.compose.material.icons.outlined.Grid3x3
 import androidx.compose.material.icons.outlined.GridOff
 import androidx.compose.material.icons.outlined.Photo
+import androidx.compose.material.icons.outlined.PhotoSizeSelectLarge
+import androidx.compose.material.icons.outlined.PictureInPictureAlt
 import androidx.compose.material.icons.outlined.Timer10
 import androidx.compose.material.icons.outlined.Timer3
 import androidx.compose.material.icons.outlined.TimerOff
@@ -49,6 +52,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.geostamp.camera.R
 import com.geostamp.camera.capture.CaptureMode
 import com.geostamp.camera.capture.CaptureTimer
@@ -71,7 +75,9 @@ fun SideControls(
     iconRotation: Float,
     onCameraChange: ((CameraSettings) -> CameraSettings) -> Unit,
     onOpenSheet: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onMoveInset: () -> Unit = {},
+    onResizeInset: () -> Unit = {}
 ) {
     Column(
         modifier
@@ -93,17 +99,12 @@ fun SideControls(
             rotation = iconRotation
         ) { onCameraChange { it.copy(flashMode = it.flashMode.next()) } }
 
-        if (mode.isPhotoMode() && !simpleMode) {
+        if (mode == CaptureMode.PHOTO && !simpleMode) {
             SideTextButton(
                 text = stringResource(camera.aspectRatio.labelRes),
                 description = stringResource(R.string.cd_aspect, stringResource(camera.aspectRatio.labelRes)),
                 rotation = iconRotation
             ) { onCameraChange { it.copy(aspectRatio = it.aspectRatio.next()) } }
-            SideTextButton(
-                text = stringResource(camera.resolution.labelRes),
-                description = stringResource(R.string.cd_resolution, stringResource(camera.resolution.labelRes)),
-                rotation = iconRotation
-            ) { onCameraChange { it.copy(resolution = it.resolution.next()) } }
             SideButton(
                 icon = when (camera.timer) {
                     CaptureTimer.OFF -> Icons.Outlined.TimerOff
@@ -114,6 +115,20 @@ fun SideControls(
                 rotation = iconRotation,
                 active = camera.timer != CaptureTimer.OFF
             ) { onCameraChange { it.copy(timer = it.timer.next()) } }
+        }
+        if (mode.isDual()) {
+            SideButton(
+                icon = Icons.Outlined.PictureInPictureAlt,
+                description = stringResource(R.string.cd_inset_move),
+                rotation = iconRotation,
+                onClick = onMoveInset
+            )
+            SideButton(
+                icon = Icons.Outlined.PhotoSizeSelectLarge,
+                description = stringResource(R.string.cd_inset_size),
+                rotation = iconRotation,
+                onClick = onResizeInset
+            )
         }
         if (!simpleMode) {
             SideButton(
@@ -215,7 +230,7 @@ fun ZoomSelector(
             val description = stringResource(R.string.cd_zoom, ZoomPresets.label(preset))
             Box(
                 Modifier
-                    .size(Dimens.TouchTarget - 4.dp)
+                    .size(Dimens.TouchTarget)
                     .clip(CircleShape)
                     .clickable(role = Role.Button) { onSelect(preset) }
                     .semantics {
@@ -237,6 +252,10 @@ fun ZoomSelector(
     }
 }
 
+/**
+ * Every mode stays visible so Dual Capture is discoverable. Modes this phone cannot run are dimmed and,
+ * when tapped, explain why instead of switching. Scrolls horizontally so labels never get clipped.
+ */
 @Composable
 fun ModeSelector(
     mode: CaptureMode,
@@ -245,37 +264,46 @@ fun ModeSelector(
     onSelect: (CaptureMode) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val scroll = rememberScrollState()
     Row(
         modifier
+            .horizontalScroll(scroll)
+            .padding(horizontal = Dimens.SpaceL)
             .clip(RoundedCornerShape(50))
             .background(CameraColors.Scrim)
             .padding(3.dp),
         horizontalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        listOf(
-            CaptureMode.PHOTO,
-            CaptureMode.VIDEO,
-            CaptureMode.DUAL_PHOTO,
-            CaptureMode.DUAL_VIDEO
-        ).filter { option -> option in supportedModes }.forEach { option ->
+        CaptureMode.entries.forEach { option ->
             val isSelected = option == mode
+            val supported = option in supportedModes
+            val label = stringResource(option.labelRes)
+            val description = if (supported) label else stringResource(R.string.cd_mode_unsupported, label)
             val background by animateColorAsState(if (isSelected) CameraColors.Selected else CameraColors.Scrim.copy(alpha = 0f), label = "modeBg")
             Row(
                 Modifier
-                    .height(36.dp)
-                    .widthIn(min = 84.dp)
+                    .heightIn(min = Dimens.TouchTarget)
                     .clip(RoundedCornerShape(50))
                     .background(background)
                     .clickable(enabled = enabled, role = Role.Tab) { onSelect(option) }
-                    .semantics { selected = isSelected }
+                    .semantics {
+                        selected = isSelected
+                        contentDescription = description
+                    }
                     .padding(horizontal = Dimens.SpaceL),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
                 Text(
-                    stringResource(option.labelRes),
-                    style = CameraLabel,
-                    color = if (isSelected) CameraColors.OnSelected else CameraColors.Content
+                    label,
+                    style = CameraLabel.copy(fontSize = 15.sp),
+                    color = when {
+                        isSelected -> CameraColors.OnSelected
+                        supported -> CameraColors.Content
+                        else -> CameraColors.ContentMuted.copy(alpha = 0.6f)
+                    },
+                    maxLines = 1,
+                    softWrap = false
                 )
             }
         }

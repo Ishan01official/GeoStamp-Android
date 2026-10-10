@@ -35,7 +35,8 @@ android {
 }
 
 dependencies {
-    val cameraX = "1.4.1"
+    val cameraX = "1.5.3"
+    val media3 = "1.8.0"
     val lifecycle = "2.8.7"
     val composeBom = platform("androidx.compose:compose-bom:2024.12.01")
 
@@ -53,6 +54,13 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:$cameraX")
     implementation("androidx.camera:camera-view:$cameraX")
     implementation("androidx.camera:camera-video:$cameraX")
+
+    // Post-recording video stamping and in-app playback (Apache-2.0, maintained by Google).
+    implementation("androidx.media3:media3-transformer:$media3")
+    implementation("androidx.media3:media3-effect:$media3")
+    implementation("androidx.media3:media3-common:$media3")
+    implementation("androidx.media3:media3-exoplayer:$media3")
+    implementation("androidx.media3:media3-ui:$media3")
 
     implementation(composeBom)
     implementation("androidx.compose.ui:ui")

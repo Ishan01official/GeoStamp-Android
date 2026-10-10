@@ -33,6 +33,7 @@ class EnvironmentRepository(
     private val weatherClient: WeatherClient,
     private val mapTileRenderer: MapTileRenderer,
     private val addressCache: AddressCache = AddressCache(),
+    private val addressStabilizer: AddressStabilizer = AddressStabilizer(),
     private val clock: () -> Long = System::currentTimeMillis
 ) {
     private val _snapshot = MutableStateFlow(EnvironmentSnapshot())
@@ -43,7 +44,7 @@ class EnvironmentRepository(
     private var addressRequestId = 0L
     private var lastAddressRequestAtMillis = 0L
 
-    fun onLocation(location: LocationStamp, services: OnlineServices) {
+    fun onLocation(location: LocationStamp, services: OnlineServices, showHouseNumbers: Boolean = false) {
         val current = _snapshot.value
         if (!services.addressLookup) _snapshot.update { it.copy(address = null) }
         if (!services.weather) _snapshot.update { it.copy(weather = null) }
@@ -67,8 +68,11 @@ class EnvironmentRepository(
                 runCatching { addressResolver.resolve(location.latitude, location.longitude) }
                     .onFailure { Log.w(TAG, "Address lookup failed", it) }
                     .getOrNull()
-                    ?.let { address ->
+                    ?.let { parts ->
                         val fetchedAt = clock()
+                        val address = synchronized(addressStabilizer) {
+                            addressStabilizer.onLookup(parts, location, fetchedAt, showHouseNumbers)
+                        } ?: return@let
                         val cached = addressCache.put(address, location, fetchedAt)
                         if (requestId == addressRequestId) {
                             _snapshot.update { it.copy(address = Placed(cached.address, cached.near, cached.fetchedAtMillis)) }

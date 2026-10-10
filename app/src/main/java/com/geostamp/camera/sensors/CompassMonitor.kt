@@ -7,19 +7,28 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import com.geostamp.camera.location.LocationStamp
+import kotlin.math.abs
 
+/**
+ * Magnetic compass from whichever fused source the phone supports. Phones without a magnetometer report
+ * [CompassUpdate.Unavailable] and are never given a heading derived from the gyroscope or game rotation
+ * vector, because neither knows where north is.
+ */
 class CompassMonitor(
     context: Context,
     private val sensorManager: SensorManager =
         context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
 ) : SensorEventListener {
-    private val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-    private val magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
+    val capabilities: SensorCapabilities = SensorCapabilities.from(sensorManager)
+
     private var gravityValues: FloatArray? = null
     private var magneticValues: FloatArray? = null
     private var referenceLocation: LocationStamp? = null
     private var accuracy = CompassAccuracy.UNKNOWN
     private var onUpdate: ((CompassUpdate) -> Unit)? = null
+    private val rotation = FloatArray(9)
+    private val remapped = FloatArray(9)
+    private val orientation = FloatArray(3)
 
     fun setReferenceLocation(location: LocationStamp?) {
         referenceLocation = location
@@ -28,14 +37,15 @@ class CompassMonitor(
     fun start(onUpdate: (CompassUpdate) -> Unit) {
         stop()
         this.onUpdate = onUpdate
-
-        if (accelerometer == null || magnetometer == null) {
-            onUpdate(CompassUpdate.Unavailable)
-            return
+        when (capabilities.compassSource) {
+            CompassSource.ROTATION_VECTOR ->
+                register(Sensor.TYPE_ROTATION_VECTOR)
+            CompassSource.ACCELEROMETER_MAGNETOMETER -> {
+                register(Sensor.TYPE_ACCELEROMETER)
+                register(Sensor.TYPE_MAGNETIC_FIELD)
+            }
+            CompassSource.NONE -> onUpdate(CompassUpdate.Unavailable)
         }
-
-        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_UI)
-        sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_UI)
     }
 
     fun stop() {
@@ -45,60 +55,65 @@ class CompassMonitor(
 
     override fun onSensorChanged(event: SensorEvent) {
         when (event.sensor.type) {
-            Sensor.TYPE_ACCELEROMETER -> gravityValues = event.values.clone()
-            Sensor.TYPE_MAGNETIC_FIELD -> magneticValues = event.values.clone()
+            Sensor.TYPE_ROTATION_VECTOR -> {
+                SensorManager.getRotationMatrixFromVector(rotation, event.values)
+                publish()
+            }
+            Sensor.TYPE_ACCELEROMETER -> {
+                gravityValues = event.values.clone()
+                publishFromAccelerometerAndMagnetometer()
+            }
+            Sensor.TYPE_MAGNETIC_FIELD -> {
+                magneticValues = event.values.clone()
+                publishFromAccelerometerAndMagnetometer()
+            }
         }
-        publishReadingIfReady()
     }
 
     override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {
-        if (sensor.type == Sensor.TYPE_MAGNETIC_FIELD) {
+        if (sensor.type == Sensor.TYPE_MAGNETIC_FIELD || sensor.type == Sensor.TYPE_ROTATION_VECTOR) {
             this.accuracy = accuracy.toCompassAccuracy()
         }
     }
 
-    private fun publishReadingIfReady() {
+    private fun publishFromAccelerometerAndMagnetometer() {
         val gravity = gravityValues ?: return
         val magnetic = magneticValues ?: return
-        val rotationMatrix = FloatArray(9)
-        val inclinationMatrix = FloatArray(9)
-        val hasRotation = SensorManager.getRotationMatrix(
-            rotationMatrix,
-            inclinationMatrix,
-            gravity,
-            magnetic
-        )
-        if (!hasRotation) return
+        if (SensorManager.getRotationMatrix(rotation, null, gravity, magnetic)) publish()
+    }
 
-        val orientation = FloatArray(3)
-        SensorManager.getOrientation(rotationMatrix, orientation)
-        val magneticDegrees = normalizeDegrees(Math.toDegrees(orientation[0].toDouble()).toFloat())
-        val trueDegrees = trueHeading(magneticDegrees)
+    private fun publish() {
+        // rotation[8] is the cosine of the angle between the screen normal and vertical. When the phone is
+        // held up like a camera, report the direction the rear camera faces instead of the top edge.
+        val matrix = if (abs(rotation[8]) < UPRIGHT_THRESHOLD) {
+            SensorManager.remapCoordinateSystem(rotation, SensorManager.AXIS_X, SensorManager.AXIS_Z, remapped)
+            remapped
+        } else {
+            rotation
+        }
+        SensorManager.getOrientation(matrix, orientation)
+        val magneticDegrees = CompassSmoother.normalize(Math.toDegrees(orientation[0].toDouble()).toFloat())
         onUpdate?.invoke(
             CompassUpdate.Available(
-                CompassReading(
-                    magneticDegrees = magneticDegrees,
-                    trueDegrees = trueDegrees,
-                    accuracy = accuracy
-                )
+                CompassReading(magneticDegrees = magneticDegrees, trueDegrees = trueHeading(magneticDegrees), accuracy = accuracy)
             )
         )
     }
 
     private fun trueHeading(magneticDegrees: Float): Float? {
         val location = referenceLocation ?: return null
-        val altitude = location.altitudeMeters?.toFloat() ?: 0f
         val field = GeomagneticField(
             location.latitude.toFloat(),
             location.longitude.toFloat(),
-            altitude,
+            location.altitudeMeters?.toFloat() ?: 0f,
             location.measuredAtMillis
         )
-        return normalizeDegrees(magneticDegrees + field.declination)
+        return CompassSmoother.normalize(magneticDegrees + field.declination)
     }
 
-    private fun normalizeDegrees(degrees: Float): Float =
-        ((degrees % FULL_CIRCLE_DEGREES) + FULL_CIRCLE_DEGREES) % FULL_CIRCLE_DEGREES
+    private fun register(type: Int) {
+        sensorManager.getDefaultSensor(type)?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_UI) }
+    }
 
     private fun Int.toCompassAccuracy(): CompassAccuracy =
         when (this) {
@@ -110,6 +125,7 @@ class CompassMonitor(
         }
 
     private companion object {
-        const val FULL_CIRCLE_DEGREES = 360
+        /** About 45° away from lying flat. */
+        const val UPRIGHT_THRESHOLD = 0.7f
     }
 }

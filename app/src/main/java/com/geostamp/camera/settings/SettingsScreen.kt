@@ -27,6 +27,7 @@ import androidx.compose.material.icons.outlined.Grid3x3
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material.icons.outlined.Map
+import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.Photo
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.Policy
@@ -68,7 +69,7 @@ private const val PRIVACY_URL = "$SOURCE_URL/blob/main/PRIVACY.md"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onOpenStampSettings: () -> Unit) {
+fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onOpenStampSettings: () -> Unit, onOpenDiagnostics: () -> Unit) {
     val settings = viewModel.settings.collectAsStateWithLifecycle().value ?: return
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -146,20 +147,31 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onOpenStamp
                         onSelect = { v -> update { it.copy(location = it.location.copy(displayRefresh = v)) } },
                         icon = Icons.Outlined.GpsFixed
                     )
-                    ChoiceRow(
-                        title = stringResource(R.string.setting_compass_smoothing),
-                        options = CompassSmoothing.entries,
-                        selected = settings.location.compassSmoothing,
-                        label = { stringResource(it.labelRes) },
-                        onSelect = { v -> update { it.copy(location = it.location.copy(compassSmoothing = v)) } },
-                        icon = Icons.Outlined.Explore
-                    )
+                    if (viewModel.hasCompass) {
+                        ChoiceRow(
+                            title = stringResource(R.string.setting_compass_smoothing),
+                            options = CompassSmoothing.entries,
+                            selected = settings.location.compassSmoothing,
+                            label = { stringResource(it.labelRes) },
+                            onSelect = { v -> update { it.copy(location = it.location.copy(compassSmoothing = v)) } },
+                            icon = Icons.Outlined.Explore
+                        )
+                    } else {
+                        InfoRow(stringResource(R.string.setting_no_compass), stringResource(R.string.setting_no_compass_summary), Icons.Outlined.Explore)
+                    }
                     SwitchRow(
                         title = stringResource(R.string.setting_address),
                         summary = stringResource(R.string.setting_address_summary),
                         checked = settings.services.addressLookup,
                         onCheckedChange = { v -> update { it.copy(services = it.services.copy(addressLookup = v)) } },
                         icon = Icons.Outlined.Place
+                    )
+                    SwitchRow(
+                        title = stringResource(R.string.setting_house_numbers),
+                        summary = stringResource(R.string.setting_house_numbers_summary),
+                        checked = settings.location.showHouseNumbers,
+                        enabled = settings.services.addressLookup,
+                        onCheckedChange = { v -> update { it.copy(location = it.location.copy(showHouseNumbers = v)) } }
                     )
                 }
             }
@@ -298,6 +310,12 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onOpenStamp
             item {
                 SettingsSection(stringResource(R.string.section_about)) {
                     InfoRow(stringResource(R.string.about_version), BuildConfig.VERSION_NAME, Icons.Outlined.Info)
+                    ClickRow(
+                        title = stringResource(R.string.diagnostics_title),
+                        summary = stringResource(R.string.diagnostics_summary),
+                        icon = Icons.Outlined.Memory,
+                        onClick = onOpenDiagnostics
+                    )
                     ClickRow(
                         title = stringResource(R.string.about_source),
                         summary = SOURCE_URL.removePrefix("https://"),

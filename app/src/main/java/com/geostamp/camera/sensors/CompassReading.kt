@@ -6,9 +6,6 @@ data class CompassReading(
     val accuracy: CompassAccuracy
 ) {
     val displayDegrees: Float = trueDegrees ?: magneticDegrees
-
-    fun displayText(): String =
-        "${CompassHeading.cardinal(displayDegrees)} ${displayDegrees.toInt()} deg (${accuracy.label})"
 }
 
 enum class CompassAccuracy(val label: String) {
@@ -22,10 +19,4 @@ enum class CompassAccuracy(val label: String) {
 sealed interface CompassUpdate {
     data object Unavailable : CompassUpdate
     data class Available(val reading: CompassReading) : CompassUpdate
-
-    fun displayText(): String =
-        when (this) {
-            Unavailable -> "Compass unavailable"
-            is Available -> reading.displayText()
-        }
 }

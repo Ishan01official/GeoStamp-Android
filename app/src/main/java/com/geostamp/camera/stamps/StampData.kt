@@ -1,15 +1,18 @@
 package com.geostamp.camera.stamps
 
+import com.geostamp.camera.address.AddressSource
 import com.geostamp.camera.location.LocationStamp
-import com.geostamp.camera.sensors.CompassReading
+import com.geostamp.camera.sensors.HeadingSnapshot
 
 /** Real measurements captured at shutter time. Null means "not measured" and is never filled with guesses. */
 data class StampData(
     val capturedAtMillis: Long,
     val location: LocationStamp? = null,
-    val heading: CompassReading? = null,
+    val heading: HeadingSnapshot? = null,
     val address: String? = null,
-    val weather: WeatherReading? = null
+    val weather: WeatherReading? = null,
+    /** Manual addresses are recorded as such in metadata and never treated as GPS-derived. */
+    val addressSource: AddressSource = AddressSource.DETECTED
 )
 
 data class WeatherReading(

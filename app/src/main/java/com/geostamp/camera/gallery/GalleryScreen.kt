@@ -13,8 +13,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -29,7 +30,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -119,7 +119,8 @@ fun GalleryScreen(
                     consentLauncher.launch(IntentSenderRequest.Builder(request.intentSender).build())
                 }
             }
-            null -> Unit
+            // Address edits are reported by the viewer that started them.
+            is GalleryMessage.AddressEdited, GalleryMessage.AddressEditFailed, null -> Unit
         }
     }
 
@@ -177,7 +178,7 @@ fun GalleryScreen(
                 state.loading -> Unit
                 state.visibleItems.isEmpty() -> EmptyGallery()
                 else -> LazyVerticalGrid(
-                    columns = GridCells.Adaptive(minSize = 112.dp),
+                    columns = GridCells.Adaptive(minSize = 120.dp),
                     contentPadding = PaddingValues(Dimens.SpaceXs),
                     horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
                     verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs),
@@ -215,14 +216,16 @@ fun GalleryScreen(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun FilterRow(state: GalleryUiState, viewModel: GalleryViewModel) {
-    Row(
+    // Wraps instead of scrolling so every filter stays visible, even with large system font sizes.
+    FlowRow(
         Modifier
             .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
             .padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceS),
-        horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)
+        horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS),
+        verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)
     ) {
         listOf(
             MediaFilter.ALL to R.string.filter_all,
@@ -231,7 +234,6 @@ private fun FilterRow(state: GalleryUiState, viewModel: GalleryViewModel) {
         ).forEach { (filter, label) ->
             FilterChip(selected = state.mediaFilter == filter, onClick = { viewModel.setMediaFilter(filter) }, label = { Text(stringResource(label)) })
         }
-        Spacer(Modifier.size(Dimens.SpaceS))
         listOf(StampFilter.STAMPED to R.string.filter_stamped, StampFilter.UNSTAMPED to R.string.filter_unstamped)
             .forEach { (filter, label) ->
                 val selected = state.stampFilter == filter
@@ -258,7 +260,8 @@ private fun GalleryTile(
     val shape = RoundedCornerShape(Dimens.CornerSmall)
     Box(
         Modifier
-            .aspectRatio(1f)
+            // Portrait 3:4 tiles match GeoStamp photos, so the stamp at the bottom is not cropped away.
+            .aspectRatio(3f / 4f)
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .then(if (selected) Modifier.border(3.dp, MaterialTheme.colorScheme.primary, shape) else Modifier)

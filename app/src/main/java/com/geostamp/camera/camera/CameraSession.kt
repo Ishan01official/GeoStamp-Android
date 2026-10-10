@@ -1,9 +1,7 @@
 package com.geostamp.camera.camera
 
 import android.annotation.SuppressLint
-import android.content.ContentValues
 import android.content.Context
-import android.provider.MediaStore
 import android.util.Size
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExposureState
@@ -15,7 +13,7 @@ import androidx.camera.core.resolutionselector.AspectRatioStrategy
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.video.FallbackStrategy
-import androidx.camera.video.MediaStoreOutputOptions
+import androidx.camera.video.FileOutputOptions
 import androidx.camera.video.Quality
 import androidx.camera.video.QualitySelector
 import androidx.camera.video.Recording
@@ -26,17 +24,18 @@ import androidx.camera.view.video.AudioConfig
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.Observer
 import com.geostamp.camera.capture.CaptureMode
 import com.geostamp.camera.capture.FlashMode
 import com.geostamp.camera.capture.LensFacing
-import com.geostamp.camera.capture.MediaStoreWriter
 import com.geostamp.camera.capture.PhotoAspectRatio
 import com.geostamp.camera.capture.PhotoResolution
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.io.File
 import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /** Desired camera configuration; applied incrementally so unchanged values never trigger a rebind. */
 data class CameraConfig(
@@ -68,17 +67,44 @@ class CameraSession(context: Context) {
 
     val zoomState: LiveData<ZoomState> get() = controller.zoomState
 
-    fun bind(owner: LifecycleOwner) = controller.bindToLifecycle(owner)
+    private val _boundCamera = MutableStateFlow<BoundCamera?>(null)
 
-    fun unbind() = controller.unbind()
+    /**
+     * The camera CameraX has actually opened. CameraX re-points [zoomState] at the new camera on every
+     * bind and lens switch, so observing it is a reliable "binding completed" signal. The provider's
+     * initialization future completes earlier, before any camera is bound, which is why flash
+     * capability must not be read there.
+     */
+    val boundCamera: StateFlow<BoundCamera?> = _boundCamera.asStateFlow()
+    private val bindObserver = Observer<ZoomState> { publishBoundCamera() }
+
+    fun bind(owner: LifecycleOwner) {
+        controller.bindToLifecycle(owner)
+        controller.zoomState.removeObserver(bindObserver)
+        controller.zoomState.observe(owner, bindObserver)
+        publishBoundCamera()
+    }
+
+    fun unbind() {
+        controller.zoomState.removeObserver(bindObserver)
+        controller.unbind()
+        _boundCamera.value = null
+    }
 
     fun onInitialized(listener: () -> Unit) =
         controller.initializationFuture.addListener(listener, mainExecutor)
 
+    private fun publishBoundCamera() {
+        val info = controller.cameraInfo ?: return
+        val lens = when (info.lensFacing) {
+            CameraSelector.LENS_FACING_FRONT -> LensFacing.FRONT
+            else -> LensFacing.BACK
+        }
+        _boundCamera.value = BoundCamera(lens = lens, hasFlashUnit = info.hasFlashUnit())
+    }
+
     fun hasLens(lens: LensFacing): Boolean =
         runCatching { controller.hasCamera(lens.selector()) }.getOrDefault(lens == LensFacing.BACK)
-
-    fun hasFlashUnit(): Boolean = controller.cameraInfo?.hasFlashUnit() ?: false
 
     fun exposureState(): ExposureState? = controller.cameraInfo?.exposureState
 
@@ -131,19 +157,14 @@ class CameraSession(context: Context) {
     fun takePicture(executor: Executor, callback: ImageCapture.OnImageCapturedCallback) =
         controller.takePicture(executor, callback)
 
-    /** Caller must have checked RECORD_AUDIO before passing [withAudio] = true. */
+    /**
+     * Records to an app-private file that the video pipeline stamps before anything reaches the gallery.
+     * CameraX stops the recording itself at [maxDurationMillis]. Caller must have checked RECORD_AUDIO
+     * before passing [withAudio] = true.
+     */
     @SuppressLint("MissingPermission")
-    fun startRecording(withAudio: Boolean, listener: (VideoRecordEvent) -> Unit): Recording {
-        val name = "GeoStamp_${SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US).format(Date())}.mp4"
-        val values = ContentValues().apply {
-            put(MediaStore.Video.Media.DISPLAY_NAME, name)
-            put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
-            put(MediaStore.Video.Media.RELATIVE_PATH, MediaStoreWriter.VIDEO_RELATIVE_PATH)
-        }
-        val options = MediaStoreOutputOptions.Builder(
-            appContext.contentResolver,
-            MediaStore.Video.Media.EXTERNAL_CONTENT_URI
-        ).setContentValues(values).build()
+    fun startRecording(file: File, maxDurationMillis: Long, withAudio: Boolean, listener: (VideoRecordEvent) -> Unit): Recording {
+        val options = FileOutputOptions.Builder(file).setDurationLimitMillis(maxDurationMillis).build()
         return controller.startRecording(options, AudioConfig.create(withAudio), mainExecutor) { listener(it) }
     }
 
@@ -187,3 +208,5 @@ class CameraSession(context: Context) {
 fun CaptureMode.isPhotoMode(): Boolean = this == CaptureMode.PHOTO || this == CaptureMode.DUAL_PHOTO
 
 fun CaptureMode.isVideoMode(): Boolean = this == CaptureMode.VIDEO || this == CaptureMode.DUAL_VIDEO
+
+fun CaptureMode.isDual(): Boolean = this == CaptureMode.DUAL_PHOTO || this == CaptureMode.DUAL_VIDEO

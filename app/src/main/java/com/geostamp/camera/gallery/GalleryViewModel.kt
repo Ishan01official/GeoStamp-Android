@@ -48,6 +48,8 @@ data class GalleryUiState(
 sealed interface GalleryMessage {
     data class BatchFinished(val result: BatchResult) : GalleryMessage
     data class NeedsDeleteConsent(val uris: List<Uri>) : GalleryMessage
+    data class AddressEdited(val uri: Uri) : GalleryMessage
+    data object AddressEditFailed : GalleryMessage
 }
 
 class GalleryViewModel(application: Application) : AndroidViewModel(application) {
@@ -100,6 +102,27 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
     fun onDeleteConsentResult(uris: List<Uri>) {
         repository.evict(uris)
         refresh()
+    }
+
+    /** Re-stamps from the unstamped source with a typed address; the existing photo and its original are kept. */
+    fun editAddress(source: MediaItem, address: String) {
+        viewModelScope.launch {
+            val settings = container.settingsRepository.settings.first()
+            val logo = withContext(Dispatchers.IO) { container.stampResources.loadLogo(settings.stamp.logoPath) }
+            val result = runCatching {
+                container.batchStamper.restampWithAddress(
+                    source = source.uri,
+                    address = address,
+                    preferences = settings.stamp.copy(enabled = true),
+                    logo = logo,
+                    jpegQuality = settings.storage.jpegQuality
+                )
+            }
+            _state.update {
+                it.copy(message = result.fold({ uri -> GalleryMessage.AddressEdited(uri) }, { GalleryMessage.AddressEditFailed }))
+            }
+            refresh()
+        }
     }
 
     fun batchStamp() {

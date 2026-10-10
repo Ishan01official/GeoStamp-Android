@@ -1,9 +1,9 @@
 package com.geostamp.camera.camera
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AutoAwesomeMosaic
 import androidx.compose.material.icons.outlined.CenterFocusStrong
 import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material.icons.outlined.Visibility
@@ -32,9 +31,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.geostamp.camera.R
 import com.geostamp.camera.capture.CaptureMode
-import com.geostamp.camera.capture.CaptureTimer
-import com.geostamp.camera.capture.FlashMode
-import com.geostamp.camera.capture.PhotoAspectRatio
 import com.geostamp.camera.capture.PhotoResolution
 import com.geostamp.camera.capture.ZoomPresets
 import com.geostamp.camera.settings.AppSettings
@@ -53,7 +49,7 @@ data class ExposureUi(val index: Int, val min: Int, val max: Int, val stepEv: Fl
 
 data class ZoomUi(val current: Float, val min: Float, val max: Float)
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun CameraControlsSheet(
     settings: AppSettings,
@@ -83,36 +79,13 @@ fun CameraControlsSheet(
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceS)
             )
-            if (mode.isPhotoMode()) {
+            if (mode == CaptureMode.PHOTO) {
                 SegmentedRow(
                     title = stringResource(R.string.ctl_resolution),
                     options = PhotoResolution.entries,
                     selected = camera.resolution,
                     label = { stringResource(it.labelRes) },
                     onSelect = { choice -> onCameraChange { it.copy(resolution = choice) } }
-                )
-                SegmentedRow(
-                    title = stringResource(R.string.ctl_aspect),
-                    options = PhotoAspectRatio.entries,
-                    selected = camera.aspectRatio,
-                    label = { stringResource(it.labelRes) },
-                    onSelect = { choice -> onCameraChange { it.copy(aspectRatio = choice) } }
-                )
-                SegmentedRow(
-                    title = stringResource(R.string.ctl_timer),
-                    options = CaptureTimer.entries,
-                    selected = camera.timer,
-                    label = { stringResource(it.labelRes) },
-                    onSelect = { choice -> onCameraChange { it.copy(timer = choice) } }
-                )
-            }
-            if (hasFlashUnit) {
-                SegmentedRow(
-                    title = stringResource(R.string.ctl_flash),
-                    options = FlashMode.entries,
-                    selected = camera.flashMode,
-                    label = { stringResource(it.labelRes) },
-                    onSelect = { choice -> onCameraChange { it.copy(flashMode = choice) } }
                 )
             }
             ExposureSlider(exposure, onExposure)
@@ -129,12 +102,6 @@ fun CameraControlsSheet(
                     }
                 )
             }
-            SwitchRow(
-                title = stringResource(R.string.ctl_grid),
-                checked = camera.gridEnabled,
-                onCheckedChange = { checked -> onCameraChange { it.copy(gridEnabled = checked) } },
-                icon = Icons.Outlined.AutoAwesomeMosaic
-            )
             SwitchRow(
                 title = stringResource(R.string.ctl_focus),
                 summary = stringResource(R.string.ctl_focus_summary),
@@ -154,8 +121,8 @@ fun CameraControlsSheet(
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceXs)
             )
-            Row(
-                Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = Dimens.SpaceL),
+            FlowRow(
+                Modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceL),
                 horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)
             ) {
                 StampTemplate.entries.forEach { template ->

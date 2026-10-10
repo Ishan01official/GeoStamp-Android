@@ -1,14 +1,20 @@
 package com.geostamp.camera.capture
 
 import android.content.ContentResolver
+import android.content.ContentUris
 import android.content.ContentValues
 import android.graphics.Bitmap
 import android.net.Uri
+import android.os.Build
+import android.os.Bundle
+import androidx.annotation.RequiresApi
 import android.os.Environment
 import android.os.ParcelFileDescriptor
 import android.provider.MediaStore
 import androidx.exifinterface.media.ExifInterface
+import com.geostamp.camera.address.AddressSource
 import com.geostamp.camera.location.LocationStamp
+import java.io.File
 import java.io.OutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -22,7 +28,8 @@ data class PhotoMetadata(
     val writeLocation: Boolean,
     val stamped: Boolean,
     /** Clockwise rotation needed to view the stored pixels upright; null leaves the tag untouched. */
-    val rotationDegrees: Int? = null
+    val rotationDegrees: Int? = null,
+    val addressSource: AddressSource = AddressSource.DETECTED
 )
 
 /** Saves media into the shared Pictures/GeoStamp collection using scoped storage. */
@@ -50,6 +57,38 @@ class MediaStoreWriter(private val resolver: ContentResolver) {
 
     fun publishVideo(uri: Uri) {
         resolver.update(uri, ContentValues().apply { put(MediaStore.Video.Media.IS_PENDING, 0) }, null, null)
+    }
+
+    /**
+     * Copies a finished MP4 into Movies/GeoStamp. The entry stays pending (invisible) until the copy
+     * completes, and is removed if the copy fails, so the gallery never shows a partial file.
+     */
+    fun saveVideoFile(source: File, displayName: String, takenAtMillis: Long): Uri {
+        val uri = createPendingVideo(displayName, takenAtMillis)
+        try {
+            resolver.openOutputStream(uri)?.use { output -> source.inputStream().use { it.copyTo(output, COPY_BUFFER_BYTES) } }
+                ?: error("Could not open $displayName for writing")
+            publishVideo(uri)
+            return uri
+        } catch (e: Exception) {
+            runCatching { resolver.delete(uri, null, null) }
+            throw e
+        }
+    }
+
+    /** Removes this app's own half-written videos left behind by an interrupted save. */
+    @RequiresApi(Build.VERSION_CODES.R)
+    fun deleteStalePendingVideos(olderThanMillis: Long): Int {
+        val args = Bundle().apply {
+            putInt(MediaStore.QUERY_ARG_MATCH_PENDING, MediaStore.MATCH_ONLY)
+            putString(ContentResolver.QUERY_ARG_SQL_SELECTION, "${MediaStore.MediaColumns.RELATIVE_PATH} LIKE ? AND ${MediaStore.MediaColumns.DATE_ADDED} < ?")
+            putStringArray(ContentResolver.QUERY_ARG_SQL_SELECTION_ARGS, arrayOf("$VIDEO_RELATIVE_PATH%", (olderThanMillis / 1000).toString()))
+        }
+        val stale = mutableListOf<Uri>()
+        resolver.query(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, arrayOf(MediaStore.MediaColumns._ID), args, null)?.use { cursor ->
+            while (cursor.moveToNext()) stale += ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, cursor.getLong(0))
+        }
+        return stale.count { uri -> runCatching { resolver.delete(uri, null, null) > 0 }.getOrDefault(false) }
     }
 
     fun delete(uri: Uri) {
@@ -87,7 +126,7 @@ class MediaStoreWriter(private val resolver: ContentResolver) {
             exif.setAttribute(ExifInterface.TAG_DATETIME, dateTime)
             exif.setAttribute(ExifInterface.TAG_OFFSET_TIME_ORIGINAL, exifOffset(metadata.capturedAtMillis))
             exif.setAttribute(ExifInterface.TAG_SOFTWARE, SOFTWARE)
-            exif.setAttribute(ExifInterface.TAG_USER_COMMENT, if (metadata.stamped) STAMPED_MARKER else ORIGINAL_MARKER)
+            exif.setAttribute(ExifInterface.TAG_USER_COMMENT, userComment(metadata))
             val orientation = if (resetOrientation) ExifInterface.ORIENTATION_NORMAL else metadata.rotationDegrees?.let(::exifOrientation)
             orientation?.let { exif.setAttribute(ExifInterface.TAG_ORIENTATION, it.toString()) }
             val location = metadata.location
@@ -111,6 +150,13 @@ class MediaStoreWriter(private val resolver: ContentResolver) {
         const val STAMPED_MARKER = "GeoStamp:stamped"
         const val ORIGINAL_MARKER = "GeoStamp:original"
         const val ORIGINAL_SUFFIX = "_original"
+        const val STAMPED_VIDEO_SUFFIX = "_stamped"
+        private const val COPY_BUFFER_BYTES = 1 shl 16
+        const val MANUAL_ADDRESS_MARKER = ";address=manual"
+
+        fun userComment(metadata: PhotoMetadata): String =
+            (if (metadata.stamped) STAMPED_MARKER else ORIGINAL_MARKER) +
+                if (metadata.stamped && metadata.addressSource == AddressSource.MANUAL) MANUAL_ADDRESS_MARKER else ""
 
         private val GPS_TAGS = listOf(
             ExifInterface.TAG_GPS_LATITUDE, ExifInterface.TAG_GPS_LATITUDE_REF,

@@ -19,6 +19,14 @@ class CompassRepository(
     val latestReading: CompassReading?
         get() = (_updates.value as? CompassUpdate.Available)?.reading
 
+    private val _heading = MutableStateFlow<HeadingSnapshot?>(null)
+
+    /** Canonical whole-degree direction for both the top bar and the stamp; null when none is known. */
+    val heading: StateFlow<HeadingSnapshot?> = _heading.asStateFlow()
+
+    val capabilities: SensorCapabilities get() = monitor.capabilities
+    private var reference: LocationStamp? = null
+
     fun start() = monitor.start { update ->
         val smoothed = when (update) {
             is CompassUpdate.Available -> CompassUpdate.Available(smoother.smooth(update.reading, smoothing))
@@ -32,11 +40,20 @@ class CompassRepository(
             return@start
         }
         _updates.value = smoothed
+        recomputeHeading()
     }
 
     fun stop() = monitor.stop()
 
-    fun setReferenceLocation(location: LocationStamp?) = monitor.setReferenceLocation(location)
+    fun setReferenceLocation(location: LocationStamp?) {
+        reference = location
+        monitor.setReferenceLocation(location)
+        recomputeHeading()
+    }
+
+    private fun recomputeHeading() {
+        _heading.value = HeadingResolver.resolve(latestReading, reference)
+    }
 
     fun setSmoothing(mode: CompassSmoothing) {
         if (smoothing == mode) return

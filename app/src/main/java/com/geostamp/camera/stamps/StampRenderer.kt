@@ -53,7 +53,7 @@ class StampRenderer(
     ) {
         if (content.isEmpty || width <= 0 || height <= 0) return
         val metrics = Metrics(min(width, height), style.fontScale, content.compact)
-        val showMap = content.showMap && map != null
+        val showMap = content.showMap
         val showLogo = content.showLogo && logo != null
 
         val maxCardWidth = width - 2 * metrics.margin
@@ -85,7 +85,12 @@ class StampRenderer(
         var contentLeft = card.left + metrics.padding
         if (showMap) {
             val mapTop = card.top + metrics.padding + (innerHeight - mapSize) / 2f
-            drawMap(canvas, map!!, RectF(contentLeft, mapTop, contentLeft + mapSize, mapTop + mapSize), metrics)
+            val mapRect = RectF(contentLeft, mapTop, contentLeft + mapSize, mapTop + mapSize)
+            if (content.mapPanel == MapPanel.TILE && map != null) {
+                drawMap(canvas, map, mapRect, metrics)
+            } else {
+                drawCoordinatePanel(canvas, content.panelCoordinates, mapRect, style, metrics)
+            }
             contentLeft += mapSize + metrics.columnGap
         }
         if (showLogo) {
@@ -203,6 +208,37 @@ class StampRenderer(
         canvas.restore()
 
         drawMarker(canvas, rect.centerX(), rect.centerY(), rect.width() * 0.07f)
+    }
+
+    /**
+     * Honest placeholder for the map slot: a framed crosshair and the coordinates as text. It deliberately
+     * contains no streets or terrain, so it cannot be mistaken for a real map.
+     */
+    private fun drawCoordinatePanel(canvas: Canvas, lines: List<String>, rect: RectF, style: StampStyle, metrics: Metrics) {
+        val radius = metrics.corner * 0.7f
+        canvas.drawRoundRect(rect, radius, radius, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(70, 255, 255, 255) })
+        val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            this.style = Paint.Style.STROKE
+            strokeWidth = metrics.hairline * 1.5f
+            color = withAlpha(style.textColor, 0.55f)
+        }
+        canvas.drawRoundRect(rect, radius, radius, stroke)
+        val cx = rect.centerX()
+        val cy = rect.top + rect.height() * 0.36f
+        val ring = rect.width() * 0.13f
+        canvas.drawCircle(cx, cy, ring, stroke)
+        canvas.drawLine(cx - ring * 1.8f, cy, cx + ring * 1.8f, cy, stroke)
+        canvas.drawLine(cx, cy - ring * 1.8f, cx, cy + ring * 1.8f, stroke)
+        val text = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = rect.width() * 0.105f
+            color = withAlpha(style.textColor, 0.95f)
+            textAlign = Paint.Align.CENTER
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+        }
+        lines.take(2).forEachIndexed { index, line ->
+            val y = rect.top + rect.height() * (0.72f + index * 0.16f)
+            canvas.drawText(line, cx, y, text)
+        }
     }
 
     private fun drawMarker(canvas: Canvas, x: Float, y: Float, radius: Float) {

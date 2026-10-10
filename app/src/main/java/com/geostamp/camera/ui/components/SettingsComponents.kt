@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.geostamp.camera.R
@@ -201,7 +202,8 @@ fun <T> SegmentedRow(
                     shape = SegmentedButtonDefaults.itemShape(index, options.size),
                     icon = {}
                 ) {
-                    Text(label(option), maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.labelLarge)
+                    // Two lines rather than an ellipsis, so longer translations and large fonts stay readable.
+                    Text(label(option), maxLines = 2, textAlign = TextAlign.Center, style = MaterialTheme.typography.labelLarge)
                 }
             }
         }

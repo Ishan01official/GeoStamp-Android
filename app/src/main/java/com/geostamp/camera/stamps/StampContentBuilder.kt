@@ -1,11 +1,10 @@
 package com.geostamp.camera.stamps
 
-import com.geostamp.camera.sensors.CompassHeading
+import com.geostamp.camera.sensors.HeadingFormatter
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
-import kotlin.math.roundToInt
 
 /** Turns real capture data and user preferences into [StampContent]. Missing data is omitted, never invented. */
 class StampContentBuilder(
@@ -36,9 +35,14 @@ class StampContentBuilder(
             dateTime = if (fields.dateTime) formatDate(data.capturedAtMillis, preferences.dateFormat) else null,
             headline = data.address?.trim()?.takeIf { fields.address && it.isNotEmpty() },
             details = details,
-            showMap = fields.map && mapAvailable && data.location != null,
+            mapPanel = when {
+                !fields.map || data.location == null -> MapPanel.NONE
+                mapAvailable -> MapPanel.TILE
+                else -> MapPanel.COORDINATES
+            },
             showLogo = fields.logo && logoAvailable,
-            compact = preferences.template.compact
+            compact = preferences.template.compact,
+            panelCoordinates = data.location?.let { CoordinateFormatter.panelLines(it.latitude, it.longitude) }.orEmpty()
         )
     }
 
@@ -60,11 +64,7 @@ class StampContentBuilder(
                 add(labels.accuracy.format(formatNumber(location.accuracyMeters.toDouble(), 0)))
             }
             val heading = data.heading
-            if (fields.heading && heading != null) {
-                val degrees = heading.displayDegrees.roundToInt() % 360
-                val suffix = if (heading.trueDegrees == null) " ${labels.magneticSuffix}" else ""
-                add("${CompassHeading.cardinal(heading.displayDegrees)} $degrees°$suffix")
-            }
+            if (fields.heading && heading != null) add(HeadingFormatter.format(heading, labels.heading))
         }
         return parts.takeIf { it.isNotEmpty() }?.let { StampLine(StampIcon.ACCURACY, it.joinToString(SEPARATOR)) }
     }
@@ -75,8 +75,8 @@ class StampContentBuilder(
             location.altitudeMeters?.takeIf { fields.altitude }?.let {
                 add(labels.altitude.format(formatNumber(it, 0)))
             }
-            location.speedMetersPerSecond?.takeIf { fields.speed }?.let {
-                add(labels.speed.format(formatSpeed(it)))
+            location.speedMetersPerSecond?.takeIf { fields.speed }?.let(::formatSpeed)?.let {
+                add(labels.speed.format(it))
             }
         }
         return parts.takeIf { it.isNotEmpty() }?.let { StampLine(StampIcon.ALTITUDE, it.joinToString(SEPARATOR)) }
@@ -96,15 +96,16 @@ class StampContentBuilder(
 
     private fun formatNumber(value: Double, decimals: Int): String = "%.${decimals}f".format(Locale.US, value)
 
-    private fun formatSpeed(metersPerSecond: Float): String {
+    /** Below about 1 km/h a GPS speed is drift, not movement, so it is omitted rather than shown as 0.2. */
+    private fun formatSpeed(metersPerSecond: Float): String? {
         val kmh = metersPerSecond * METERS_PER_SECOND_TO_KMH
-        return if (kmh < STATIONARY_SPEED_KMH) "0" else formatNumber(kmh.toDouble(), 1)
+        return if (kmh < STATIONARY_SPEED_KMH) null else formatNumber(kmh, 1)
     }
 
     companion object {
         const val SEPARATOR = " · "
         private const val METERS_PER_SECOND_TO_KMH = 3.6
         private const val STATIONARY_SPEED_KMH = 1.0
-        private val EMPTY = StampContent(null, null, emptyList(), showMap = false, showLogo = false, compact = true)
+        private val EMPTY = StampContent(null, null, emptyList(), mapPanel = MapPanel.NONE, showLogo = false, compact = true)
     }
 }

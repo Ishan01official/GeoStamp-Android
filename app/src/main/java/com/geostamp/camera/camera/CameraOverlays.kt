@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Explore
@@ -24,8 +26,12 @@ import androidx.compose.material.icons.outlined.GpsFixed
 import androidx.compose.material.icons.outlined.GpsNotFixed
 import androidx.compose.material.icons.outlined.GpsOff
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.MicOff
+import androidx.compose.material.icons.outlined.Navigation
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -35,8 +41,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -44,8 +53,10 @@ import androidx.compose.ui.unit.sp
 import com.geostamp.camera.R
 import com.geostamp.camera.location.LocationUpdate
 import com.geostamp.camera.sensors.CompassAccuracy
-import com.geostamp.camera.sensors.CompassHeading
-import com.geostamp.camera.sensors.CompassUpdate
+import com.geostamp.camera.sensors.HeadingFormatter
+import com.geostamp.camera.sensors.HeadingKind
+import com.geostamp.camera.sensors.HeadingLabels
+import com.geostamp.camera.sensors.HeadingSnapshot
 import com.geostamp.camera.ui.components.CameraChip
 import com.geostamp.camera.ui.components.CameraIconButton
 import com.geostamp.camera.ui.theme.CameraColors
@@ -57,27 +68,19 @@ import kotlin.math.roundToInt
 @Composable
 fun TopOverlay(
     location: LocationUpdate?,
-    compass: CompassUpdate?,
+    heading: HeadingSnapshot?,
+    hasCompass: Boolean,
     maxAccuracyMeters: Int,
     simpleMode: Boolean,
     iconRotation: Float,
-    diagnosticsOpen: Boolean,
-    onToggleDiagnostics: () -> Unit,
+    onLocationClick: () -> Unit,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS)) {
-        GpsChip(location, maxAccuracyMeters, simpleMode, Modifier.align(Alignment.CenterStart))
-        if (!simpleMode) CompassChip(compass, Modifier.align(Alignment.Center))
+        GpsChip(location, maxAccuracyMeters, simpleMode, onLocationClick, Modifier.align(Alignment.CenterStart))
+        if (!simpleMode) HeadingChip(heading, hasCompass, Modifier.align(Alignment.Center))
         Row(Modifier.align(Alignment.CenterEnd), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
-            CameraIconButton(
-                icon = Icons.Outlined.Info,
-                contentDescription = stringResource(R.string.cd_diagnostics),
-                onClick = onToggleDiagnostics,
-                rotation = iconRotation,
-                active = diagnosticsOpen,
-                size = 36.dp
-            )
             CameraIconButton(
                 icon = Icons.Outlined.Settings,
                 contentDescription = stringResource(R.string.cd_settings),
@@ -90,17 +93,17 @@ fun TopOverlay(
 }
 
 @Composable
-private fun GpsChip(location: LocationUpdate?, maxAccuracyMeters: Int, simpleMode: Boolean, modifier: Modifier) {
+private fun GpsChip(location: LocationUpdate?, maxAccuracyMeters: Int, simpleMode: Boolean, onClick: () -> Unit, modifier: Modifier) {
     val (icon, text, tint) = when (location) {
         is LocationUpdate.Available -> {
             val accuracy = location.location.accuracyMeters.roundToInt()
             val good = location.location.isAccurateEnough(maxAccuracyMeters.toFloat())
             Triple(
                 if (good) Icons.Outlined.GpsFixed else Icons.Outlined.GpsNotFixed,
-                if (simpleMode) {
-                    stringResource(if (good) R.string.gps_ready else R.string.gps_improving)
-                } else {
-                    stringResource(R.string.gps_accuracy, accuracy)
+                when {
+                    location.location.approximate -> stringResource(R.string.gps_approximate)
+                    simpleMode -> stringResource(if (good) R.string.gps_ready else R.string.gps_improving)
+                    else -> stringResource(R.string.gps_accuracy, accuracy)
                 },
                 if (good) CameraColors.Content else CameraColors.Warning
             )
@@ -112,7 +115,7 @@ private fun GpsChip(location: LocationUpdate?, maxAccuracyMeters: Int, simpleMod
         )
         LocationUpdate.PermissionDenied -> Triple(
             Icons.Outlined.GpsOff,
-            stringResource(if (simpleMode) R.string.gps_unavailable else R.string.gps_denied),
+            stringResource(R.string.gps_denied),
             CameraColors.ContentMuted
         )
         is LocationUpdate.ProvidersDisabled, is LocationUpdate.ProviderUnavailable ->
@@ -123,58 +126,45 @@ private fun GpsChip(location: LocationUpdate?, maxAccuracyMeters: Int, simpleMod
             CameraColors.ContentMuted
         )
     }
-    CameraChip(text = text, icon = icon, iconTint = tint, modifier = modifier)
+    CameraChip(
+        text = text,
+        icon = icon,
+        iconTint = tint,
+        onClick = onClick,
+        contentDescription = stringResource(R.string.cd_location_status, text),
+        modifier = modifier
+    )
 }
 
+/** Shows the same snapshot the stamp uses, labelled as compass heading or travel course. */
 @Composable
-private fun CompassChip(compass: CompassUpdate?, modifier: Modifier) {
-    when (compass) {
-        is CompassUpdate.Available -> {
-            val reading = compass.reading
-            val degrees = reading.displayDegrees.roundToInt() % 360
-            val text = if (reading.accuracy == CompassAccuracy.UNRELIABLE) {
-                "${CompassHeading.cardinal(reading.displayDegrees)} $degrees° · ${stringResource(R.string.compass_calibrate)}"
-            } else {
-                "${CompassHeading.cardinal(reading.displayDegrees)} $degrees°"
-            }
-            CameraChip(text = text, icon = Icons.Outlined.Explore, modifier = modifier)
+private fun HeadingChip(heading: HeadingSnapshot?, hasCompass: Boolean, modifier: Modifier) {
+    val labels = rememberHeadingLabels()
+    when {
+        heading != null -> {
+            val text = HeadingFormatter.format(heading, labels)
+            val calibrate = heading.accuracy == CompassAccuracy.UNRELIABLE && heading.kind != HeadingKind.COURSE
+            CameraChip(
+                text = if (calibrate) "$text · ${stringResource(R.string.compass_calibrate)}" else text,
+                icon = if (heading.kind == HeadingKind.COURSE) Icons.Outlined.Navigation else Icons.Outlined.Explore,
+                modifier = modifier
+            )
         }
-        CompassUpdate.Unavailable -> CameraChip(
-            text = stringResource(R.string.compass_unavailable),
+        else -> CameraChip(
+            text = stringResource(if (hasCompass) R.string.heading_waiting else R.string.heading_unavailable),
             icon = Icons.Outlined.Explore,
             iconTint = CameraColors.ContentMuted,
             modifier = modifier
         )
-        null -> Unit
     }
 }
 
-/** Collapsible technical details; kept out of the primary UI. */
 @Composable
-fun DiagnosticsPanel(visible: Boolean, rows: List<Pair<String, String>>, modifier: Modifier = Modifier) {
-    AnimatedVisibility(
-        visible = visible,
-        enter = fadeIn() + expandVertically(),
-        exit = fadeOut() + shrinkVertically(),
-        modifier = modifier
-    ) {
-        Column(
-            Modifier
-                .padding(horizontal = Dimens.SpaceM)
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(Dimens.CornerMedium))
-                .background(CameraColors.ScrimStrong)
-                .padding(Dimens.SpaceM),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            rows.forEach { (label, value) ->
-                Row {
-                    Text(label, style = CameraLabel, color = CameraColors.ContentMuted, modifier = Modifier.weight(0.32f))
-                    Text(value, style = CameraLabel, color = CameraColors.Content, modifier = Modifier.weight(0.68f))
-                }
-            }
-        }
-    }
+private fun rememberHeadingLabels(): HeadingLabels {
+    val trueHeading = stringResource(R.string.heading_true_format)
+    val magnetic = stringResource(R.string.heading_magnetic_format)
+    val course = stringResource(R.string.heading_course_format)
+    return remember(trueHeading, magnetic, course) { HeadingLabels(trueHeading, magnetic, course) }
 }
 
 @Composable
@@ -222,18 +212,76 @@ fun CountdownOverlay(seconds: Int?, modifier: Modifier = Modifier) {
     }
 }
 
+/** Large, high-contrast recording status: elapsed time, the one-minute limit, and a warning near the end. */
 @Composable
-fun RecordingBadge(seconds: Long?, modifier: Modifier = Modifier) {
+fun RecordingBadge(seconds: Long?, limitSeconds: Long, hasAudio: Boolean, modifier: Modifier = Modifier) {
     if (seconds == null) return
-    Row(
-        modifier
-            .clip(RoundedCornerShape(50))
-            .background(CameraColors.Recording)
-            .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceXs),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Box(Modifier.size(8.dp).clip(RoundedCornerShape(50)).background(CameraColors.Content))
-        Text("%02d:%02d".format(seconds / 60, seconds % 60), style = CameraLabel, color = CameraColors.Content)
+    val remaining = (limitSeconds - seconds).coerceAtLeast(0)
+    val status = stringResource(R.string.rec_status, formatClock(seconds), formatClock(limitSeconds))
+    val description = pluralStringResource(R.plurals.cd_recording_status, limitSeconds.toInt(), seconds.toInt(), limitSeconds.toInt())
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs), modifier = modifier) {
+        Row(
+            Modifier
+                .clip(RoundedCornerShape(50))
+                .background(CameraColors.Recording)
+                .semantics(mergeDescendants = true) {
+                    contentDescription = description
+                    liveRegion = LiveRegionMode.Polite
+                }
+                .padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceS),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)
+        ) {
+            Box(Modifier.size(10.dp).clip(RoundedCornerShape(50)).background(CameraColors.Content))
+            Text(status, style = CameraLabel.copy(fontSize = 17.sp, fontWeight = FontWeight.SemiBold), color = CameraColors.Content)
+        }
+        LinearProgressIndicator(
+            progress = { seconds.toFloat() / limitSeconds },
+            color = CameraColors.Recording,
+            trackColor = CameraColors.Scrim,
+            modifier = Modifier.width(160.dp)
+        )
+        when {
+            remaining <= RECORDING_WARNING_SECONDS ->
+                CameraChip(stringResource(R.string.rec_seconds_left, remaining.toInt()), iconTint = CameraColors.Warning)
+            !hasAudio -> CameraChip(stringResource(R.string.rec_no_audio), icon = Icons.Outlined.MicOff)
+        }
     }
 }
+
+/** Shown while the stamp is being added to a finished recording. Cancel keeps the recording, unstamped. */
+@Composable
+fun VideoStampingCard(progressPercent: Int?, onCancel: () -> Unit, modifier: Modifier = Modifier) {
+    val label = if (progressPercent == null) {
+        stringResource(R.string.video_stamping_preparing)
+    } else {
+        stringResource(R.string.video_stamping_progress, progressPercent)
+    }
+    Row(
+        modifier
+            .padding(horizontal = Dimens.SpaceL)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Dimens.CornerMedium))
+            .background(CameraColors.ScrimStrong)
+            .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }
+            .padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceS),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM)
+    ) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
+            Text(label, style = CameraLabel.copy(fontSize = 16.sp), color = CameraColors.Content)
+            if (progressPercent == null) {
+                LinearProgressIndicator(Modifier.fillMaxWidth())
+            } else {
+                LinearProgressIndicator(progress = { progressPercent / 100f }, modifier = Modifier.fillMaxWidth())
+            }
+        }
+        TextButton(onClick = onCancel, modifier = Modifier.heightIn(min = Dimens.TouchTarget)) {
+            Text(stringResource(R.string.cancel), color = CameraColors.Content)
+        }
+    }
+}
+
+private fun formatClock(seconds: Long): String = "%02d:%02d".format(seconds / 60, seconds % 60)
+
+private const val RECORDING_WARNING_SECONDS = 10L
