@@ -47,14 +47,12 @@
     <string name="permission_grant">Allow camera</string>
     <string name="permission_open_settings">Open app settings</string>
     <string name="saved_photo">Photo saved</string>
-    <string name="saved_video">Video saved</string>
+    <string name="saved_video">Stamped video saved</string>
     <string name="action_view">View</string>
     <string name="error_capture_failed">Couldn\'t take the photo</string>
     <string name="error_save_failed">Couldn\'t save the photo</string>
     <string name="error_video_failed">Couldn\'t record video</string>
-    <string name="error_video_stamp_failed">Couldn\'t stamp the video; original saved</string>
     <string name="error_dual_capture_unavailable">Dual Capture is not available on this device</string>
-    <string name="video_stamping_note">Saving stamped video</string>
     <string name="stamp_off_badge">Stamp off</string>
 
     <!-- Diagnostics -->
@@ -313,4 +311,15 @@
     <string name="gps_not_ready_saved">GPS not ready. The photo was saved without coordinates.</string>
     <string name="setting_no_compass">No compass sensor</string>
     <string name="setting_no_compass_summary">This phone has no magnetometer, so it cannot tell which way the camera faces. While you move, GeoStamp can show your travel direction (course) instead.</string>
+    <string name="error_video_busy">Please wait. The previous video is still getting its stamp.</string>
+    <string name="error_video_low_storage">Not enough free space for a stamped video. Free at least 400 MB and try again.</string>
+    <string name="video_unstamped_cancelled">Stamping cancelled. The video was saved WITHOUT a stamp.</string>
+    <string name="video_unstamped_low_storage">Not enough space to add the stamp. The video was saved WITHOUT a stamp.</string>
+    <string name="video_unstamped_failed">The stamp could not be added. The video was saved WITHOUT a stamp.</string>
+    <string name="video_stamping_preparing">Preparing to add the stamp…</string>
+    <string name="video_stamping_progress">Adding stamp to video… %1$d%%</string>
+    <string name="rec_status">REC %1$s / %2$s</string>
+    <string name="cd_recording_status">Recording, %1$d of %2$d seconds</string>
+    <string name="rec_seconds_left">%1$d s left</string>
+    <string name="rec_no_audio">No sound: microphone not allowed</string>
 </resources>

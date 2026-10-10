@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.GpsNotFixed
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -69,6 +70,8 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.geostamp.camera.location.LocationUpdate
 import com.geostamp.camera.permissions.LocationAccess
 import com.geostamp.camera.permissions.PermissionPolicy
+import com.geostamp.camera.video.VideoJobState
+import com.geostamp.camera.video.VideoLimits
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -251,6 +254,7 @@ private fun CameraScreen(
     LaunchedEffect(lifecycleOwner) { viewModel.session.bind(lifecycleOwner) }
 
     val gpsNotReady by viewModel.gpsNotReady.collectAsStateWithLifecycle()
+    val videoJob by viewModel.videoJob.collectAsStateWithLifecycle()
     val savedWithoutGps = stringResource(R.string.gps_not_ready_saved)
     val savedPhoto = stringResource(R.string.saved_photo)
     val savedVideo = stringResource(R.string.saved_video)
@@ -270,6 +274,15 @@ private fun CameraScreen(
                 CameraEvent.SavedWithoutGps -> scope.launch {
                     snackbar.currentSnackbarData?.dismiss()
                     snackbar.showSnackbar(savedWithoutGps)
+                }
+                is CameraEvent.VideoSavedWithoutStamp -> scope.launch {
+                    snackbar.currentSnackbarData?.dismiss()
+                    val result = snackbar.showSnackbar(
+                        context.getString(event.messageRes),
+                        actionLabel = viewAction,
+                        duration = SnackbarDuration.Long
+                    )
+                    if (result == SnackbarResult.ActionPerformed) onOpenMedia(event.uri)
                 }
                 is CameraEvent.Failed -> scope.launch {
                     val message = context.getString(event.messageRes)
@@ -297,7 +310,8 @@ private fun CameraScreen(
         ) {
             AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
             if (settings.camera.gridEnabled) GridOverlay()
-            liveStamp?.takeIf { capture.mode.isPhotoMode() }?.let { bitmap ->
+            // Shown in video mode too: the same card is burned into every frame after recording.
+            liveStamp?.let { bitmap ->
                 Image(
                     bitmap = bitmap.asImageBitmap(),
                     contentDescription = null,
@@ -378,6 +392,7 @@ private fun CameraScreen(
             zoomPresets = zoomState?.let { ZoomPresets.forRange(it.minZoomRatio, it.maxZoomRatio) }.orEmpty(),
             zoomRatio = zoomState?.zoomRatio ?: 1f,
             stampEnabled = settings.stamp.enabled,
+            videoJob = videoJob,
             gpsNotReady = gpsNotReady,
             addressBar = if (settings.stamp.enabled && settings.stamp.fields.address && capture.recordingSeconds == null) {
                 { AddressBar(detectedAddress, addressOverride, onEdit = { showAddressEditor = true }, modifier = Modifier.padding(horizontal = Dimens.SpaceL)) }
@@ -448,6 +463,7 @@ private fun BottomControls(
     zoomPresets: List<Float>,
     zoomRatio: Float,
     stampEnabled: Boolean,
+    videoJob: VideoJobState,
     gpsNotReady: Boolean,
     addressBar: (@Composable () -> Unit)?,
     simpleMode: Boolean,
@@ -465,9 +481,9 @@ private fun BottomControls(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(Dimens.SpaceM)
     ) {
-        RecordingBadge(capture.recordingSeconds)
+        RecordingBadge(capture.recordingSeconds, VideoLimits.MAX_DURATION_SECONDS, capture.recordingHasAudio)
+        (videoJob as? VideoJobState.Stamping)?.let { VideoStampingCard(it.progressPercent, onCancel = viewModel::cancelVideoStamping) }
         when {
-            capture.mode.isVideoMode() && capture.isProcessing -> CameraChip(stringResource(R.string.video_stamping_note))
             capture.mode.isPhotoMode() && !stampEnabled ->
                 CameraChip(stringResource(R.string.stamp_off_badge))
             gpsNotReady && capture.recordingSeconds == null ->

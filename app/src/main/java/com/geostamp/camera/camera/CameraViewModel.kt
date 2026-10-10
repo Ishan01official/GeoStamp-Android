@@ -27,8 +27,12 @@ import com.geostamp.camera.capture.CapturedImageDecoder
 import com.geostamp.camera.capture.LensFacing
 import com.geostamp.camera.capture.SaveOptions
 import com.geostamp.camera.capture.StampRequest
-import com.geostamp.camera.capture.VideoStampRequest
-import com.geostamp.camera.capture.VideoStampSample
+import com.geostamp.camera.video.VideoJobState
+import com.geostamp.camera.video.VideoLimits
+import com.geostamp.camera.video.VideoOutcome
+import com.geostamp.camera.video.VideoStampRequest
+import com.geostamp.camera.video.VideoStampSample
+import java.io.File
 import com.geostamp.camera.location.LocationStamp
 import com.geostamp.camera.location.LocationStabilizationPolicy
 import com.geostamp.camera.location.LocationUpdate
@@ -71,6 +75,7 @@ data class CaptureUiState(
     val countdown: Int? = null,
     val isProcessing: Boolean = false,
     val recordingSeconds: Long? = null,
+    val recordingHasAudio: Boolean = true,
     val lastCapture: LastCapture? = null,
     val lastCaptureInfo: String? = null,
     val cameraReady: Boolean = false
@@ -81,6 +86,9 @@ data class LastCapture(val uri: Uri, val thumbnail: Bitmap?, val isVideo: Boolea
 sealed interface CameraEvent {
     data class Saved(val uri: Uri, val isVideo: Boolean) : CameraEvent
     data class Failed(val messageRes: Int, val detail: String? = null) : CameraEvent
+
+    /** The recording is in the gallery but without a stamp; [messageRes] says why. Never reported as success. */
+    data class VideoSavedWithoutStamp(val uri: Uri, val messageRes: Int) : CameraEvent
     data object ShutterFeedback : CameraEvent
 
     /** Non-blocking notice: the photo was saved, but without coordinates. Coordinates are never invented. */
@@ -98,6 +106,9 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     private val captureExecutor = Executors.newSingleThreadExecutor()
 
     val session = CameraSession(application)
+
+    /** Post-recording stamping progress, shared with the app-wide video coordinator. */
+    val videoJob: StateFlow<VideoJobState> = container.videoCapture.state
 
     val settings: StateFlow<AppSettings?> = settingsRepository.settings
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -398,15 +409,26 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         }
 
     private fun startRecording() {
+        val videos = container.videoCapture
+        if (videos.state.value != VideoJobState.Idle) {
+            _events.trySend(CameraEvent.Failed(R.string.error_video_busy))
+            return
+        }
+        if (!videos.hasSpaceToRecord()) {
+            _events.trySend(CameraEvent.Failed(R.string.error_video_low_storage))
+            return
+        }
         val withAudio = ContextCompat.checkSelfPermission(getApplication(), Manifest.permission.RECORD_AUDIO) ==
             PackageManager.PERMISSION_GRANTED
+        val startedAt = System.currentTimeMillis()
+        val file = videos.newRecordingFile(startedAt)
         recording = runCatching {
-            session.startRecording(withAudio) { event -> onRecordEvent(event) }
+            session.startRecording(file, VideoLimits.MAX_DURATION_MILLIS, withAudio) { event -> onRecordEvent(event, file) }
         }.onFailure { fail(R.string.error_video_failed, it) }.getOrNull()
         if (recording != null) {
-            recordingStartedAtMillis = System.currentTimeMillis()
-            startVideoMetadataSampling(recordingStartedAtMillis)
-            _capture.update { it.copy(recordingSeconds = 0) }
+            recordingStartedAtMillis = startedAt
+            startVideoMetadataSampling(startedAt)
+            _capture.update { it.copy(recordingSeconds = 0, recordingHasAudio = withAudio) }
         }
     }
 
@@ -415,21 +437,24 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         recording = null
     }
 
-    private fun onRecordEvent(event: VideoRecordEvent) {
+    private fun onRecordEvent(event: VideoRecordEvent, file: File) {
         when (event) {
+            // CameraX starts a few hundred ms after the button press; time the stamp from the real start.
+            is VideoRecordEvent.Start -> {
+                recordingStartedAtMillis = System.currentTimeMillis()
+                startVideoMetadataSampling(recordingStartedAtMillis)
+            }
             is VideoRecordEvent.Status -> _capture.update {
-                it.copy(recordingSeconds = event.recordingStats.recordedDurationNanos / 1_000_000_000L)
+                it.copy(recordingSeconds = (event.recordingStats.recordedDurationNanos / 1_000_000_000L).coerceAtMost(VideoLimits.MAX_DURATION_SECONDS))
             }
             is VideoRecordEvent.Finalize -> {
                 val samples = stopVideoMetadataSampling()
                 addressOverrides.onCaptureCompleted()
                 _capture.update { it.copy(recordingSeconds = null) }
                 recording = null
-                if (event.hasError() && event.error != VideoRecordEvent.Finalize.ERROR_SOURCE_INACTIVE) {
-                    _events.trySend(CameraEvent.Failed(R.string.error_video_failed, event.cause?.message))
-                } else {
-                    processRecordedVideo(event.outputResults.outputUri, samples)
-                }
+                if (event.error != VideoRecordEvent.Finalize.ERROR_NONE) Log.w(TAG, "Recording finalized with code ${event.error}", event.cause)
+                // A limit-reached or source-inactive finalize still produces a complete file; the coordinator checks it.
+                processRecordedVideo(file, samples)
             }
             else -> Unit
         }
@@ -438,12 +463,11 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     private fun startVideoMetadataSampling(startedAtMillis: Long) {
         videoMetadataJob?.cancel()
         videoStampSamples.clear()
-        videoStampSamples += videoStampSample(startedAtMillis, startedAtMillis)
         videoMetadataJob = viewModelScope.launch {
             while (true) {
                 val now = System.currentTimeMillis()
-                videoStampSamples += videoStampSample(startedAtMillis, now)
-                delay(ONE_SECOND - now % ONE_SECOND)
+                videoStampSamples += videoStampSample(recordingStartedAtMillis, now)
+                delay(ONE_SECOND - (now - recordingStartedAtMillis).mod(ONE_SECOND))
             }
         }
     }
@@ -474,50 +498,54 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         )
     }
 
-    private fun processRecordedVideo(uri: Uri, samples: List<VideoStampSample>) {
+    private fun processRecordedVideo(file: File, samples: List<VideoStampSample>) {
         val appSettings = settings.value
-        if (appSettings == null || !appSettings.stamp.enabled) {
-            publishRecordedVideo(uri)
-            return
+        val startedAt = recordingStartedAtMillis.takeIf { it > 0L } ?: System.currentTimeMillis()
+        val request = appSettings?.stamp?.takeIf { it.enabled }?.let { preferences ->
+            VideoStampRequest(
+                startedAtMillis = startedAt,
+                preferences = preferences,
+                samples = samples.ifEmpty { listOf(videoStampSample(startedAt, startedAt)) }
+            )
         }
-
-        _capture.update { it.copy(isProcessing = true) }
-        container.applicationScope.launch(Dispatchers.Default) {
-            val startedAt = recordingStartedAtMillis.takeIf { it > 0L } ?: System.currentTimeMillis()
-            runCatching {
-                container.videoStampProcessor.process(
-                    inputUri = uri,
-                    request = VideoStampRequest(
-                        startedAtMillis = startedAt,
-                        preferences = appSettings.stamp,
-                        samples = samples.ifEmpty { listOf(videoStampSample(startedAt, System.currentTimeMillis())) }
-                    ),
-                    saveOriginal = appSettings.storage.saveOriginal
-                )
-            }.onSuccess { video ->
-                val thumbnail = container.galleryRepository.thumbnail(video.uri)
-                _capture.update {
-                    it.copy(
-                        isProcessing = false,
-                        lastCapture = LastCapture(video.uri, thumbnail, isVideo = true),
-                        lastCaptureInfo = "${video.width}×${video.height}"
-                    )
-                }
-                _events.trySend(CameraEvent.Saved(video.uri, isVideo = true))
-            }.onFailure { error ->
-                Log.e(TAG, "Video stamping failed; keeping original recording", error)
-                publishRecordedVideo(uri)
-                _events.trySend(CameraEvent.Failed(R.string.error_video_stamp_failed, error.message))
-            }
+        container.videoCapture.process(file, request, keepOriginal = appSettings?.storage?.saveOriginal == true) { outcome ->
+            onVideoOutcome(outcome)
         }
     }
 
-    private fun publishRecordedVideo(uri: Uri) {
-        viewModelScope.launch {
-            val thumbnail = container.galleryRepository.thumbnail(uri)
-            _capture.update { it.copy(isProcessing = false, lastCapture = LastCapture(uri, thumbnail, isVideo = true)) }
+    fun cancelVideoStamping() = container.videoCapture.cancel()
+
+    private fun onVideoOutcome(outcome: VideoOutcome) {
+        when (outcome) {
+            is VideoOutcome.Stamped -> {
+                viewModelScope.launch {
+                    val thumbnail = container.galleryRepository.thumbnail(outcome.uri)
+                    _capture.update {
+                        it.copy(
+                            lastCapture = LastCapture(outcome.uri, thumbnail, isVideo = true),
+                            lastCaptureInfo = "${outcome.info.width}×${outcome.info.height} · ${outcome.info.durationMillis / 1000}s"
+                        )
+                    }
+                }
+                _events.trySend(CameraEvent.Saved(outcome.uri, isVideo = true))
+            }
+            is VideoOutcome.SavedWithoutStamp -> {
+                viewModelScope.launch {
+                    val thumbnail = container.galleryRepository.thumbnail(outcome.uri)
+                    _capture.update { it.copy(lastCapture = LastCapture(outcome.uri, thumbnail, isVideo = true)) }
+                }
+                _events.trySend(CameraEvent.VideoSavedWithoutStamp(outcome.uri, outcome.reason.messageRes()))
+            }
+            is VideoOutcome.Failed -> _events.trySend(CameraEvent.Failed(outcome.reason.messageRes(), outcome.detail))
         }
-        _events.trySend(CameraEvent.Saved(uri, isVideo = true))
+    }
+
+    private fun VideoOutcome.Reason.messageRes(): Int = when (this) {
+        VideoOutcome.Reason.CANCELLED -> R.string.video_unstamped_cancelled
+        VideoOutcome.Reason.LOW_STORAGE -> R.string.video_unstamped_low_storage
+        VideoOutcome.Reason.STAMPING_FAILED, VideoOutcome.Reason.VERIFICATION_FAILED -> R.string.video_unstamped_failed
+        VideoOutcome.Reason.SAVE_FAILED -> R.string.error_save_failed
+        VideoOutcome.Reason.RECORDING_INVALID -> R.string.error_video_failed
     }
 
     private fun stampAddress(detected: String?): StampAddress = AddressChoice.effective(detected, addressOverrides.override.value)

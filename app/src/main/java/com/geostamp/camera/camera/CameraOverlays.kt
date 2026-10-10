@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Explore
@@ -24,9 +26,12 @@ import androidx.compose.material.icons.outlined.GpsFixed
 import androidx.compose.material.icons.outlined.GpsNotFixed
 import androidx.compose.material.icons.outlined.GpsOff
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.MicOff
 import androidx.compose.material.icons.outlined.Navigation
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -37,7 +42,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -242,18 +249,76 @@ fun CountdownOverlay(seconds: Int?, modifier: Modifier = Modifier) {
     }
 }
 
+/** Large, high-contrast recording status: elapsed time, the one-minute limit, and a warning near the end. */
 @Composable
-fun RecordingBadge(seconds: Long?, modifier: Modifier = Modifier) {
+fun RecordingBadge(seconds: Long?, limitSeconds: Long, hasAudio: Boolean, modifier: Modifier = Modifier) {
     if (seconds == null) return
-    Row(
-        modifier
-            .clip(RoundedCornerShape(50))
-            .background(CameraColors.Recording)
-            .padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceXs),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Box(Modifier.size(8.dp).clip(RoundedCornerShape(50)).background(CameraColors.Content))
-        Text("%02d:%02d".format(seconds / 60, seconds % 60), style = CameraLabel, color = CameraColors.Content)
+    val remaining = (limitSeconds - seconds).coerceAtLeast(0)
+    val status = stringResource(R.string.rec_status, formatClock(seconds), formatClock(limitSeconds))
+    val description = stringResource(R.string.cd_recording_status, seconds, limitSeconds)
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs), modifier = modifier) {
+        Row(
+            Modifier
+                .clip(RoundedCornerShape(50))
+                .background(CameraColors.Recording)
+                .semantics(mergeDescendants = true) {
+                    contentDescription = description
+                    liveRegion = LiveRegionMode.Polite
+                }
+                .padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceS),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceS)
+        ) {
+            Box(Modifier.size(10.dp).clip(RoundedCornerShape(50)).background(CameraColors.Content))
+            Text(status, style = CameraLabel.copy(fontSize = 17.sp, fontWeight = FontWeight.SemiBold), color = CameraColors.Content)
+        }
+        LinearProgressIndicator(
+            progress = { seconds.toFloat() / limitSeconds },
+            color = CameraColors.Recording,
+            trackColor = CameraColors.Scrim,
+            modifier = Modifier.width(160.dp)
+        )
+        when {
+            remaining <= RECORDING_WARNING_SECONDS ->
+                CameraChip(stringResource(R.string.rec_seconds_left, remaining.toInt()), iconTint = CameraColors.Warning)
+            !hasAudio -> CameraChip(stringResource(R.string.rec_no_audio), icon = Icons.Outlined.MicOff)
+        }
     }
 }
+
+/** Shown while the stamp is being added to a finished recording. Cancel keeps the recording, unstamped. */
+@Composable
+fun VideoStampingCard(progressPercent: Int?, onCancel: () -> Unit, modifier: Modifier = Modifier) {
+    val label = if (progressPercent == null) {
+        stringResource(R.string.video_stamping_preparing)
+    } else {
+        stringResource(R.string.video_stamping_progress, progressPercent)
+    }
+    Row(
+        modifier
+            .padding(horizontal = Dimens.SpaceL)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Dimens.CornerMedium))
+            .background(CameraColors.ScrimStrong)
+            .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }
+            .padding(horizontal = Dimens.SpaceL, vertical = Dimens.SpaceS),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceM)
+    ) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
+            Text(label, style = CameraLabel.copy(fontSize = 16.sp), color = CameraColors.Content)
+            if (progressPercent == null) {
+                LinearProgressIndicator(Modifier.fillMaxWidth())
+            } else {
+                LinearProgressIndicator(progress = { progressPercent / 100f }, modifier = Modifier.fillMaxWidth())
+            }
+        }
+        TextButton(onClick = onCancel, modifier = Modifier.heightIn(min = Dimens.TouchTarget)) {
+            Text(stringResource(R.string.cancel), color = CameraColors.Content)
+        }
+    }
+}
+
+private fun formatClock(seconds: Long): String = "%02d:%02d".format(seconds / 60, seconds % 60)
+
+private const val RECORDING_WARNING_SECONDS = 10L

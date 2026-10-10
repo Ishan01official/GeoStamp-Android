@@ -5,7 +5,6 @@ import android.content.Context
 import com.geostamp.camera.address.AddressOverrideRepository
 import com.geostamp.camera.capture.MediaStoreWriter
 import com.geostamp.camera.capture.PhotoProcessor
-import com.geostamp.camera.capture.VideoStampProcessor
 import com.geostamp.camera.camera.CameraCapabilityRepository
 import com.geostamp.camera.environment.AddressResolver
 import com.geostamp.camera.environment.EnvironmentRepository
@@ -19,7 +18,14 @@ import com.geostamp.camera.sensors.CompassMonitor
 import com.geostamp.camera.sensors.CompassRepository
 import com.geostamp.camera.settings.SettingsRepository
 import com.geostamp.camera.stamps.StampResources
+import androidx.annotation.OptIn
+import androidx.media3.common.util.UnstableApi
+import com.geostamp.camera.video.VideoCaptureCoordinator
+import com.geostamp.camera.video.VideoStampProcessor
+import java.io.File
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.SupervisorJob
 
 class GeoStampApplication : Application() {
@@ -29,6 +35,8 @@ class GeoStampApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
+        // Publish recordings orphaned by a process death before the camera can start a new one.
+        container.applicationScope.launch(Dispatchers.IO) { container.videoCapture.recoverInterrupted() }
     }
 }
 
@@ -56,11 +64,16 @@ class AppContainer(context: Context) {
         contentBuilder = { stampResources.contentBuilder() },
         renderer = { stampResources.renderer() }
     )
-    val videoStampProcessor = VideoStampProcessor(
-        context = appContext,
+    @OptIn(UnstableApi::class)
+    val videoCapture = VideoCaptureCoordinator(
+        workDir = File(appContext.noBackupFilesDir, "recordings"),
         writer = mediaStoreWriter,
-        contentBuilder = { stampResources.contentBuilder() },
-        renderer = { stampResources.renderer() }
+        processor = VideoStampProcessor(
+            context = appContext,
+            contentBuilder = { stampResources.contentBuilder() },
+            renderer = { stampResources.renderer() }
+        ),
+        scope = applicationScope
     )
     val batchStamper = BatchStamper(appContext.contentResolver, photoProcessor, mediaStoreWriter, environmentRepository)
 }

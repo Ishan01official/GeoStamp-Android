@@ -45,14 +45,12 @@
     <string name="permission_grant">कैमरा की अनुमति दें</string>
     <string name="permission_open_settings">ऐप सेटिंग्स खोलें</string>
     <string name="saved_photo">फ़ोटो सहेजी गई</string>
-    <string name="saved_video">वीडियो सहेजा गया</string>
+    <string name="saved_video">स्टैम्प वाला वीडियो सहेजा गया</string>
     <string name="action_view">देखें</string>
     <string name="error_capture_failed">फ़ोटो नहीं ली जा सकी</string>
     <string name="error_save_failed">फ़ोटो सहेजी नहीं जा सकी</string>
     <string name="error_video_failed">वीडियो रिकॉर्ड नहीं हो सका</string>
-    <string name="error_video_stamp_failed">वीडियो पर स्टैम्प नहीं लग सका; मूल वीडियो सहेजा गया</string>
     <string name="error_dual_capture_unavailable">इस डिवाइस पर डुअल कैप्चर उपलब्ध नहीं है</string>
-    <string name="video_stamping_note">स्टैम्प वाला वीडियो सहेजा जा रहा है</string>
     <string name="stamp_off_badge">स्टैम्प बंद</string>
 
     <string name="diag_camera">कैमरा</string>
@@ -303,4 +301,15 @@
     <string name="gps_not_ready_saved">GPS तैयार नहीं था। फ़ोटो बिना निर्देशांक के सहेजी गई।</string>
     <string name="setting_no_compass">कम्पास सेंसर नहीं है</string>
     <string name="setting_no_compass_summary">इस फ़ोन में मैग्नेटोमीटर नहीं है, इसलिए यह नहीं बता सकता कि कैमरा किस दिशा में है। चलते समय GeoStamp आपकी चलने की दिशा दिखा सकता है।</string>
+    <string name="error_video_busy">कृपया रुकें। पिछले वीडियो पर अभी स्टैम्प लग रहा है।</string>
+    <string name="error_video_low_storage">स्टैम्प वाले वीडियो के लिए पर्याप्त जगह नहीं है। कम से कम 400 MB खाली करें और फिर से कोशिश करें।</string>
+    <string name="video_unstamped_cancelled">स्टैम्प लगाना रद्द किया गया। वीडियो बिना स्टैम्प के सहेजा गया।</string>
+    <string name="video_unstamped_low_storage">स्टैम्प लगाने के लिए जगह नहीं है। वीडियो बिना स्टैम्प के सहेजा गया।</string>
+    <string name="video_unstamped_failed">स्टैम्प नहीं लग सका। वीडियो बिना स्टैम्प के सहेजा गया।</string>
+    <string name="video_stamping_preparing">स्टैम्प लगाने की तैयारी…</string>
+    <string name="video_stamping_progress">वीडियो पर स्टैम्प लग रहा है… %1$d%%</string>
+    <string name="rec_status">रिकॉर्डिंग %1$s / %2$s</string>
+    <string name="cd_recording_status">रिकॉर्डिंग चल रही है, %2$d में से %1$d सेकंड</string>
+    <string name="rec_seconds_left">%1$d सेकंड बाकी</string>
+    <string name="rec_no_audio">आवाज़ नहीं: माइक्रोफ़ोन की अनुमति नहीं</string>
 </resources>

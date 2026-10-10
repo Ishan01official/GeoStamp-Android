@@ -1,9 +1,7 @@
 package com.geostamp.camera.camera
 
 import android.annotation.SuppressLint
-import android.content.ContentValues
 import android.content.Context
-import android.provider.MediaStore
 import android.util.Size
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExposureState
@@ -15,7 +13,7 @@ import androidx.camera.core.resolutionselector.AspectRatioStrategy
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.video.FallbackStrategy
-import androidx.camera.video.MediaStoreOutputOptions
+import androidx.camera.video.FileOutputOptions
 import androidx.camera.video.Quality
 import androidx.camera.video.QualitySelector
 import androidx.camera.video.Recording
@@ -30,12 +28,9 @@ import androidx.lifecycle.Observer
 import com.geostamp.camera.capture.CaptureMode
 import com.geostamp.camera.capture.FlashMode
 import com.geostamp.camera.capture.LensFacing
-import com.geostamp.camera.capture.MediaStoreWriter
 import com.geostamp.camera.capture.PhotoAspectRatio
 import com.geostamp.camera.capture.PhotoResolution
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.io.File
 import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -162,19 +157,14 @@ class CameraSession(context: Context) {
     fun takePicture(executor: Executor, callback: ImageCapture.OnImageCapturedCallback) =
         controller.takePicture(executor, callback)
 
-    /** Caller must have checked RECORD_AUDIO before passing [withAudio] = true. */
+    /**
+     * Records to an app-private file that the video pipeline stamps before anything reaches the gallery.
+     * CameraX stops the recording itself at [maxDurationMillis]. Caller must have checked RECORD_AUDIO
+     * before passing [withAudio] = true.
+     */
     @SuppressLint("MissingPermission")
-    fun startRecording(withAudio: Boolean, listener: (VideoRecordEvent) -> Unit): Recording {
-        val name = "GeoStamp_${SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US).format(Date())}.mp4"
-        val values = ContentValues().apply {
-            put(MediaStore.Video.Media.DISPLAY_NAME, name)
-            put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
-            put(MediaStore.Video.Media.RELATIVE_PATH, MediaStoreWriter.VIDEO_RELATIVE_PATH)
-        }
-        val options = MediaStoreOutputOptions.Builder(
-            appContext.contentResolver,
-            MediaStore.Video.Media.EXTERNAL_CONTENT_URI
-        ).setContentValues(values).build()
+    fun startRecording(file: File, maxDurationMillis: Long, withAudio: Boolean, listener: (VideoRecordEvent) -> Unit): Recording {
+        val options = FileOutputOptions.Builder(file).setDurationLimitMillis(maxDurationMillis).build()
         return controller.startRecording(options, AudioConfig.create(withAudio), mainExecutor) { listener(it) }
     }
 

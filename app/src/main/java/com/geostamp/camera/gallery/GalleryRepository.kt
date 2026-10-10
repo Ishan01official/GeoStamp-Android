@@ -24,7 +24,7 @@ data class MediaItem(
     val isVideo: Boolean,
     val durationMillis: Long
 ) {
-    /** Photos saved by the camera with a burned-in stamp. Originals and videos carry no stamp. */
+    /** Media with a burned-in stamp: photos other than originals, and videos saved as `_stamped`. */
     val isStamped: Boolean get() = isStampedName(displayName, isVideo)
 
     /** Unstamped pixels to re-stamp from: the item itself, or the original saved alongside a stamped photo. */
@@ -41,8 +41,10 @@ data class MediaItem(
             else -> displayName.substringBeforeLast('.') + MediaStoreWriter.ORIGINAL_SUFFIX + ".jpg"
         }
 
-        fun isStampedName(displayName: String, isVideo: Boolean): Boolean =
-            !isVideo && !displayName.substringBeforeLast('.').endsWith(MediaStoreWriter.ORIGINAL_SUFFIX)
+        fun isStampedName(displayName: String, isVideo: Boolean): Boolean {
+            val base = displayName.substringBeforeLast('.')
+            return if (isVideo) base.endsWith(MediaStoreWriter.STAMPED_VIDEO_SUFFIX) else !base.endsWith(MediaStoreWriter.ORIGINAL_SUFFIX)
+        }
     }
 }
 
