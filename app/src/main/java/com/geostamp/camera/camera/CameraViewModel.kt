@@ -289,6 +289,9 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
             return
         }
         cancelCountdown()
+        // Release the concurrent cameras before the single-camera preview is re-attached by Compose.
+        // Otherwise CameraX is still in concurrent mode when PreviewView attaches and it throws.
+        if (_capture.value.mode.isDual() && !mode.isDual()) dual.unbind()
         _capture.update { it.copy(mode = mode) }
         applyCameraConfig()
     }
