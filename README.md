@@ -1,33 +1,30 @@
 # GeoStamp Android
 
-A privacy-first, ad-free, offline GPS photo camera for Android.
+A privacy-first, ad-free GPS camera for Android. Photos and videos carry a stamp with the date, time, place and coordinates, and the camera works fully offline.
 
-## Features (v0.2.0)
+## Features (v0.3.0)
 
-- Edge-to-edge camera with a large, undistorted preview. A compact GPS, heading and settings bar sits on top, with a side rail for flash, aspect, resolution, timer and grid
-- Zoom pills limited to levels the camera supports, plus pinch to zoom, tap to focus with an animated ring, an exposure slider and a rule-of-thirds grid
-- Photo and video modes, a timer, front and rear cameras, and a live stamp preview drawn by the same engine as saved photos
-- Professional stamp card in four templates (Minimal, Classic, Map card, Professional) with per-template fields, position, size, color, opacity, custom text, logo, and date and coordinate formats
-- Real-data-only stamps: missing address, map, weather or heading is omitted, never invented
-- Optional, off-by-default address lookup, OpenStreetMap mini map and Open-Meteo weather. See [privacy](PRIVACY.md)
-- Local gallery with photo/video and stamped/unstamped filters, a full-screen viewer, details, share, delete, open in maps and batch stamping
-- Material 3 with dynamic system colors and a neutral fallback, a Follow system / Light / Dark setting, and English and Hindi
-- No ads, accounts or analytics. Camera works without location
+- **Stamped video.** Videos record for up to 60 seconds and then get the same stamp as photos, burned into every frame. The clock ticks each second. Audio, orientation and length are kept, and the result is checked before it reaches the gallery. If stamping fails, the video is still saved and clearly marked as unstamped.
+- **In-app video player** with play/pause, 10-second skips, a seek bar, mute and full screen.
+- **Dual Capture** (Dual Photo and Dual Video) on phones that can run the front and rear cameras at the same time. The front camera shows as a movable, resizable inset that never covers the stamp. On other phones the modes stay visible and explain why they are unavailable. A second camera is never faked.
+- **Map Card stamp by default.** It shows date and time, a mini map, the address and coordinates. Without a map tile (offline, or before map tiles are allowed) it shows a plain coordinate panel instead of a fake map.
+- **Trustworthy addresses.** Reverse-geocoded house numbers are hidden unless repeated lookups agree, and the address stays steady while you stand still. You can correct the address for the next capture or for the session, and corrected addresses are marked as entered manually. Existing photos can be re-stamped from their unstamped original.
+- **Honest direction.** One heading value is shared by the screen and the stamp, labelled true, magnetic or course. Phones without a compass sensor show travel direction only while moving. Speeds under 1 km/h are hidden.
+- **Camera first.** The app asks for the camera first. Location is offered afterwards as optional, and the location chip always offers a way to turn it on.
+- Local gallery with portrait thumbnails, filters, details, share, delete and batch stamping.
+- Large text and touch targets, TalkBack labels, a Simple Camera Mode, English and Hindi.
+- Settings > Camera diagnostics lists the phone's cameras, concurrent-camera support and sensors, and can be shared.
 
-Architecture: single activity, Jetpack Compose, MVVM with StateFlow, DataStore settings, and a CameraX `LifecycleCameraController`. The image pipeline (`capture/`, `stamps/`) has no UI dependencies.
+Architecture: single activity, Jetpack Compose, MVVM with StateFlow, DataStore settings, CameraX (single and concurrent cameras), and AndroidX Media3 (Transformer for video stamping, ExoPlayer for playback). The stamp engine (`stamps/`), photo pipeline (`capture/`), video pipeline (`video/`), dual capture (`dual/`) and address handling (`address/`, `environment/`) have no UI dependencies.
 
 ## Build
 
-Open in Android Studio with JDK 17 and Android SDK 35, then sync Gradle and run the `app` module on Android 10+. The first milestone has no backend.
-
-Command-line build:
+Requires JDK 17 and Android SDK 35. Runs on Android 10 and newer.
 
 ```bash
 ./gradlew clean assembleDebug testDebugUnitTest lintDebug
 ```
 
-## Roadmap
+The on-device video stamping test needs input clips in the app's `files/verify` folder. See `app/src/androidTest/.../VideoStampPipelineTest.kt`.
 
-Stamped video (burned-in frames), more languages, wider device testing and a Play Store listing.
-
-See [privacy](PRIVACY.md) and [roadmap](docs/roadmap.md).
+See [privacy](PRIVACY.md), [roadmap](docs/roadmap.md) and the [latest device test report](docs/physical-test-report-2026-10-10-v0.3.md).

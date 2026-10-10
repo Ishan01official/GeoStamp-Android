@@ -8,7 +8,7 @@ GeoStamp has no advertising, analytics, crash reporting or account SDKs. Photos 
 |---|---|---|
 | Camera | Take photos and videos | Required for the camera screen |
 | Location (precise or approximate) | Coordinates, accuracy and true-north heading on stamps | Optional. Foreground only, while the camera screen is open. No background location |
-| Microphone | Sound in videos | Optional. Requested when switching to Video. Videos record silently without it |
+| Microphone | Sound in videos | Optional. Requested when switching to Video. Videos record silently without it, and the app says so while recording |
 | Internet | Only for the optional online features below | Never used unless you turn a feature on |
 
 ## Optional online features (all off by default)
@@ -28,3 +28,10 @@ Results are fetched in the background and only used for photos taken near the pl
 - "Keep unstamped original" saves a second, unstamped copy. It follows the same EXIF setting.
 
 This document describes the source implementation; it is not an independent security audit.
+
+## Video, addresses and diagnostics
+
+- Videos are stamped on the phone. The raw recording stays in app-private storage until the stamped copy is checked and saved, and is then deleted unless "Keep unstamped original" is on.
+- A typed address is held in memory only, for the next capture or until the app closes. It is never sent anywhere. Photos with a typed address are marked as such in their EXIF comment.
+- The Camera diagnostics report stays on the phone unless you choose Share.
+
