@@ -1,6 +1,7 @@
 package com.geostamp.camera.video
 
 import android.graphics.Bitmap
+import com.geostamp.camera.dual.NormalizedRect
 import com.geostamp.camera.stamps.StampData
 import com.geostamp.camera.stamps.StampPreferences
 
@@ -15,7 +16,9 @@ data class VideoStampSample(
 data class VideoStampRequest(
     val startedAtMillis: Long,
     val preferences: StampPreferences,
-    val samples: List<VideoStampSample>
+    val samples: List<VideoStampSample>,
+    /** Dual Video only: where CameraX composed the front camera, framed like the Dual Photo window. */
+    val pipFrame: NormalizedRect? = null
 ) {
     /** The most recent sample at or before [elapsedMillis]; location values follow the stable display fix. */
     fun sampleAtElapsed(elapsedMillis: Long): VideoStampSample? =

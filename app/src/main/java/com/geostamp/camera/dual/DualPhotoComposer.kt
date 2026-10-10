@@ -8,7 +8,6 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
 import kotlin.math.max
-import kotlin.math.min
 
 /**
  * Builds the dual photo: the rear picture fills the frame and the front picture is drawn into the inset,
@@ -24,7 +23,7 @@ object DualPhotoComposer {
             inset.right * output.width,
             inset.bottom * output.height
         )
-        val radius = min(target.width(), target.height()) * 0.08f
+        val radius = output.width * PipFrame.CORNER_FRACTION
         val clip = Path().apply { addRoundRect(target, radius, radius, Path.Direction.CW) }
 
         canvas.save()

@@ -11,10 +11,13 @@ data class StampContent(
     val showLogo: Boolean,
     val compact: Boolean,
     /** Short latitude and longitude lines for [MapPanel.COORDINATES]; never a drawing of a map. */
-    val panelCoordinates: List<String> = emptyList()
+    val panelCoordinates: List<String> = emptyList(),
+    /** Link encoded as a QR code on the stamp; null when the QR field is off or there is no fix. */
+    val qrPayload: String? = null
 ) {
     val showMap: Boolean get() = mapPanel != MapPanel.NONE
-    val isEmpty: Boolean get() = dateTime == null && headline == null && details.isEmpty() && !showMap && !showLogo
+    val showQr: Boolean get() = qrPayload != null
+    val isEmpty: Boolean get() = dateTime == null && headline == null && details.isEmpty() && !showMap && !showLogo && !showQr
 }
 
 /** What fills the map slot of a stamp. */
@@ -42,6 +45,8 @@ data class StampLabels(
     val altitude: String = "Alt %s m",
     val speed: String = "%s km/h",
     val weatherSource: String = "Open-Meteo %s",
+    /** Labelled decimal coordinates used by the QR Location template; arguments are preformatted numbers. */
+    val latitudeLongitude: String = "Lat %1\$s° Long %2\$s°",
     val weather: Map<WeatherCondition, String> = WeatherCondition.entries.associateWith { defaultWeatherName(it) }
 ) {
     companion object {

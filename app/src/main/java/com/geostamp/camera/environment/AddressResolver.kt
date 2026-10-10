@@ -57,6 +57,7 @@ class AddressResolver(private val context: Context) {
             country = countryName,
             building = featureName?.takeUnless { it == subThoroughfare || it == thoroughfare },
             district = subAdminArea,
-            addressLines = (0..maxAddressLineIndex).mapNotNull { getAddressLine(it)?.trim()?.takeIf(String::isNotEmpty) }
+            addressLines = (0..maxAddressLineIndex).mapNotNull { getAddressLine(it)?.trim()?.takeIf(String::isNotEmpty) },
+            countryCode = countryCode
         ).takeIf { AddressFormatter.format(it) != null }
 }

@@ -158,4 +158,56 @@ class SettingsRepositoryTest {
             scope = TestScope(UnconfinedTestDispatcher()),
             produceFile = { file }
         )
+
+    @Test
+    fun newInstallDefaultsToNormalMapTypeAndGoogleMaps() = runTest {
+        val settings = repository("map-defaults.preferences_pb").settings.first()
+        assertEquals(com.geostamp.camera.maps.MapType.NORMAL, settings.services.mapType)
+        assertEquals(MapLinkProvider.GOOGLE_MAPS, settings.services.mapLinkProvider)
+    }
+
+    @Test
+    fun mapTypePersistsAcrossRestartsAndUnrelatedChanges() = runTest {
+        val file = File(temporaryFolder.root, "map-type.preferences_pb")
+        val dataStore = dataStore(file)
+        SettingsRepository(dataStore).update { it.copy(services = it.services.copy(mapType = com.geostamp.camera.maps.MapType.TERRAIN)) }
+        SettingsRepository(dataStore).update { it.copy(camera = it.camera.copy(gridEnabled = true)) }
+        assertEquals(com.geostamp.camera.maps.MapType.TERRAIN, SettingsRepository(dataStore).settings.first().services.mapType)
+    }
+
+    @Test
+    fun upgradeKeepsStoredOpenStreetMapChoice() = runTest {
+        val dataStore = dataStore(File(temporaryFolder.root, "legacy-map-link.preferences_pb"))
+        dataStore.edit {
+            it[stringPreferencesKey("services.map_link")] = MapLinkProvider.OPEN_STREET_MAP.name
+            it[booleanPreferencesKey("services.weather")] = true
+            it[booleanPreferencesKey("privacy.exif_location")] = true
+        }
+        val settings = SettingsRepository(dataStore).settings.first()
+        assertEquals(MapLinkProvider.OPEN_STREET_MAP, settings.services.mapLinkProvider)
+        assertEquals(com.geostamp.camera.maps.MapType.NORMAL, settings.services.mapType)
+        assertTrue(settings.services.weather)
+        assertTrue(settings.stamp.writeExifLocation)
+    }
+
+    @Test
+    fun unknownStoredMapTypeFallsBackToNormal() = runTest {
+        val dataStore = dataStore(File(temporaryFolder.root, "bad-map-type.preferences_pb"))
+        dataStore.edit { it[stringPreferencesKey("services.map_type")] = "STREET_VIEW" }
+        assertEquals(com.geostamp.camera.maps.MapType.NORMAL, SettingsRepository(dataStore).settings.first().services.mapType)
+    }
+
+    @Test
+    fun qrLocationTemplateDefaultsAndQrFieldPersist() = runTest {
+        val repository = repository("qr-template.preferences_pb")
+        repository.update { it.copy(stamp = it.stamp.copy(template = StampTemplate.QR_LOCATION)) }
+        val fields = repository.settings.first().stamp.fields
+        assertTrue(fields.qrCode)
+        assertTrue(fields.map)
+        assertTrue(fields.address)
+        assertFalse(fields.logo)
+        repository.update { it.copy(stamp = it.stamp.withFields(it.stamp.fields.copy(qrCode = false))) }
+        assertFalse(repository.settings.first().stamp.fields.qrCode)
+        assertFalse(repository.settings.first().stamp.fieldsByTemplate.getValue(StampTemplate.MAP_CARD).qrCode)
+    }
 }

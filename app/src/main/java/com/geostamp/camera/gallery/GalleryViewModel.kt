@@ -52,6 +52,9 @@ sealed interface GalleryMessage {
     data object AddressEditFailed : GalleryMessage
 }
 
+private const val ENSURE_ATTEMPTS = 6
+private const val ENSURE_RETRY_MILLIS = 300L
+
 class GalleryViewModel(application: Application) : AndroidViewModel(application) {
     private val container = application.appContainer
     private val repository = container.galleryRepository
@@ -60,11 +63,25 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
     val state: StateFlow<GalleryUiState> = _state.asStateFlow()
 
     fun refresh() {
-        viewModelScope.launch {
-            val items = repository.loadMedia()
-            _state.update { state ->
-                state.copy(items = items, loading = false, selection = state.selection.filterTo(mutableSetOf()) { uri -> items.any { it.uri == uri } })
-            }
+        viewModelScope.launch { reload() }
+    }
+
+    private suspend fun reload() {
+        val items = repository.loadMedia()
+        _state.update { state ->
+            state.copy(items = items, loading = false, selection = state.selection.filterTo(mutableSetOf()) { uri -> items.any { it.uri == uri } })
+        }
+    }
+
+    /**
+     * Makes sure [uri] is in the list, for a viewer opened straight from the camera. A capture made after the
+     * gallery was last loaded is otherwise missing, and Android can take a moment to publish a new file.
+     */
+    suspend fun ensureLoaded(uri: Uri) {
+        repeat(ENSURE_ATTEMPTS) { attempt ->
+            if (_state.value.items.any { it.uri == uri }) return
+            if (attempt > 0) kotlinx.coroutines.delay(ENSURE_RETRY_MILLIS)
+            reload()
         }
     }
 

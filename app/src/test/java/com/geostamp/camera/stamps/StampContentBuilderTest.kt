@@ -140,4 +140,40 @@ class StampContentBuilderTest {
         assertFalse(prefs.fields.coordinates)
         assertTrue(prefs.copy(template = StampTemplate.MINIMAL).fields.coordinates)
     }
+
+    @Test
+    fun qrLocationTemplateEncodesTheCapturedCoordinates() {
+        val prefs = StampPreferences(template = StampTemplate.QR_LOCATION)
+        val content = builder.build(StampData(capturedAtMillis = 0L, location = location, address = "Meerut, Uttar Pradesh, India"), prefs)
+        assertEquals("https://www.google.com/maps/search/?api=1&query=29.007953,77.767663", content.qrPayload)
+        assertEquals("Lat 29.007953° Long 77.767663°", content.details[0].text)
+        assertEquals("Meerut, Uttar Pradesh, India", content.headline)
+        assertTrue(content.showQr)
+    }
+
+    @Test
+    fun qrIsOmittedWithoutAFixAndWhenTheFieldIsOff() {
+        val prefs = StampPreferences(template = StampTemplate.QR_LOCATION)
+        assertNull(builder.build(StampData(capturedAtMillis = 0L), prefs).qrPayload)
+        val off = prefs.withFields(prefs.fields.copy(qrCode = false))
+        assertNull(builder.build(StampData(capturedAtMillis = 0L, location = location), off).qrPayload)
+        assertNull(builder.build(StampData(capturedAtMillis = 0L, location = location), StampPreferences(template = StampTemplate.CLASSIC)).qrPayload)
+    }
+
+    @Test
+    fun localeChangesWordsButNotCoordinateDigits() {
+        val french = StampContentBuilder(Locale.FRANCE, TimeZone.getTimeZone("UTC"))
+        val content = french.build(StampData(capturedAtMillis = 0L, location = location), StampPreferences(template = StampTemplate.MINIMAL))
+        assertEquals("1 janvier 1970 · 00:00:00", content.dateTime)
+        assertEquals("29.007953, 77.767663", content.details[0].text)
+    }
+
+    @Test
+    fun temperatureUnitIsIndependentOfLanguage() {
+        val weather = WeatherReading(20.0, WeatherCondition.CLEAR, 0L)
+        val prefs = StampPreferences(template = StampTemplate.PROFESSIONAL, temperatureUnit = TemperatureUnit.FAHRENHEIT)
+        val german = StampContentBuilder(Locale.GERMANY, TimeZone.getTimeZone("UTC"))
+        val line = german.build(StampData(capturedAtMillis = 0L, location = location, weather = weather), prefs).details.first { it.icon == StampIcon.WEATHER }
+        assertTrue(line.text, line.text.startsWith("68°F"))
+    }
 }

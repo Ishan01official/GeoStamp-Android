@@ -6,11 +6,15 @@ import android.graphics.BitmapFactory
 import android.graphics.drawable.Drawable
 import androidx.core.content.ContextCompat
 import com.geostamp.camera.R
+import com.geostamp.camera.i18n.AppLanguage
 import com.geostamp.camera.sensors.HeadingLabels
 import java.io.File
 
 /** Android resources for the stamp engine: localized labels, icons and the user's logo. */
-class StampResources(private val context: Context) {
+class StampResources(private val appContext: Context) {
+    /** Follows a language chosen in GeoStamp's settings, also on Android versions without per-app languages. */
+    private val context: Context get() = AppLanguage.wrap(appContext)
+
     fun labels(): StampLabels {
         val res = context.resources
         return StampLabels(
@@ -20,6 +24,7 @@ class StampResources(private val context: Context) {
             altitude = res.getString(R.string.stamp_altitude_format),
             speed = res.getString(R.string.stamp_speed_format),
             weatherSource = res.getString(R.string.stamp_weather_source_format),
+            latitudeLongitude = res.getString(R.string.stamp_latitude_longitude_format),
             weather = WeatherCondition.entries.associateWith { res.getString(weatherName(it)) }
         )
     }
@@ -36,10 +41,7 @@ class StampResources(private val context: Context) {
     fun contentBuilder(): StampContentBuilder = StampContentBuilder(labels = labels())
 
     fun renderer(): StampRenderer =
-        StampRenderer(
-            iconProvider = { icon -> iconDrawable(icon) },
-            mapAttribution = context.getString(R.string.map_attribution)
-        )
+        StampRenderer(iconProvider = { icon -> iconDrawable(icon) })
 
     fun loadLogo(path: String?, maxSize: Int = LOGO_MAX_SIZE): Bitmap? {
         val file = path?.let(::File)?.takeIf { it.exists() } ?: return null

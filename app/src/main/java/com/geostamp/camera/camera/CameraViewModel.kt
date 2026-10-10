@@ -29,6 +29,7 @@ import com.geostamp.camera.stamps.StampPosition
 import androidx.camera.core.Preview
 import androidx.lifecycle.LifecycleOwner
 import com.geostamp.camera.capture.CaptureMode
+import com.geostamp.camera.dual.FrameSafeArea
 import com.geostamp.camera.capture.CapturedImageDecoder
 import com.geostamp.camera.capture.LensFacing
 import com.geostamp.camera.capture.SaveOptions
@@ -82,6 +83,8 @@ data class CaptureUiState(
     val isProcessing: Boolean = false,
     val recordingSeconds: Long? = null,
     val recordingHasAudio: Boolean = true,
+    /** The user switched the microphone off for this recording, as opposed to permission being missing. */
+    val recordingMuted: Boolean = false,
     val lastCapture: LastCapture? = null,
     val lastCaptureInfo: String? = null,
     val cameraReady: Boolean = false
@@ -164,6 +167,13 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
 
     private val logo = MutableStateFlow<Bitmap?>(null)
     private val overlaySize = MutableStateFlow<Pair<Int, Int>?>(null)
+
+    /** Viewfinder bands covered by controls right now; the live stamp is drawn clear of them. */
+    private val stampSafeArea = MutableStateFlow(FrameSafeArea.NONE)
+
+
+    /** Microphone on/off for Video and Dual Video, kept for the app session. */
+    val microphoneEnabled: StateFlow<Boolean> = container.sessionPreferences.microphoneEnabled
     private var countdownJob: Job? = null
     private var recording: Recording? = null
     private var recordingStartedAtMillis: Long = 0L
@@ -172,14 +182,16 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
 
     /** The stamp exactly as it would be burned in right now, rendered at preview scale. */
     val liveStamp: StateFlow<Bitmap?> = combine(
-        overlaySize, settings.filterNotNull(), location, heading, environment.snapshot, logo, clockTicks(), addressOverrides.override
+        overlaySize, settings.filterNotNull(), location, heading, environment.snapshot, logo, clockTicks(), addressOverrides.override,
+        stampSafeArea
     ) { values ->
         @Suppress("UNCHECKED_CAST")
         LiveStampInput(
             size = values[0] as Pair<Int, Int>?,
             settings = values[1] as AppSettings,
             logo = values[5] as Bitmap?,
-            nowMillis = values[6] as Long
+            nowMillis = values[6] as Long,
+            safeArea = values[8] as FrameSafeArea
         )
     }
         .conflate()
@@ -187,7 +199,13 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         .flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT), null)
 
-    private data class LiveStampInput(val size: Pair<Int, Int>?, val settings: AppSettings, val logo: Bitmap?, val nowMillis: Long)
+    private data class LiveStampInput(
+        val size: Pair<Int, Int>?,
+        val settings: AppSettings,
+        val logo: Bitmap?,
+        val nowMillis: Long,
+        val safeArea: FrameSafeArea
+    )
 
     init {
         viewModelScope.launch {
@@ -270,6 +288,21 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
 
     fun onOverlaySize(width: Int, height: Int) {
         overlaySize.value = if (width > 0 && height > 0) width to height else null
+    }
+
+    /**
+     * @param stamp bands covered by any control right now, for the live stamp.
+     * @param inset bands covered by controls that stay on screen, for the picture-in-picture. The inset is
+     *   part of a Dual Video recording, so it only moves between recordings.
+     */
+    fun onSafeArea(stamp: FrameSafeArea, inset: FrameSafeArea) {
+        stampSafeArea.value = stamp
+        if (_capture.value.recordingSeconds == null && recording == null) dual.setSafeArea(inset)
+    }
+
+    /** Turns the microphone on or off for the next recordings. Permission is requested by the screen when needed. */
+    fun setMicrophoneEnabled(enabled: Boolean) {
+        container.sessionPreferences.microphoneEnabled.value = enabled
     }
 
     fun updateCameraSettings(transform: (CameraSettings) -> CameraSettings) {
@@ -478,7 +511,8 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
             _events.trySend(CameraEvent.Failed(R.string.error_video_low_storage))
             return
         }
-        val withAudio = ContextCompat.checkSelfPermission(getApplication(), Manifest.permission.RECORD_AUDIO) ==
+        val muted = !microphoneEnabled.value
+        val withAudio = !muted && ContextCompat.checkSelfPermission(getApplication(), Manifest.permission.RECORD_AUDIO) ==
             PackageManager.PERMISSION_GRANTED
         val startedAt = System.currentTimeMillis()
         val file = videos.newRecordingFile(startedAt)
@@ -493,7 +527,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         if (recording != null) {
             recordingStartedAtMillis = startedAt
             startVideoMetadataSampling(startedAt)
-            _capture.update { it.copy(recordingSeconds = 0, recordingHasAudio = withAudio) }
+            _capture.update { it.copy(recordingSeconds = 0, recordingHasAudio = withAudio, recordingMuted = muted) }
         }
     }
 
@@ -566,11 +600,14 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     private fun processRecordedVideo(file: File, samples: List<VideoStampSample>) {
         val appSettings = settings.value
         val startedAt = recordingStartedAtMillis.takeIf { it > 0L } ?: System.currentTimeMillis()
-        val request = appSettings?.stamp?.takeIf { it.enabled }?.let { preferences ->
+        // Dual Video always goes through the stamping pass: it also draws the rounded picture-in-picture frame.
+        val pipFrame = if (_capture.value.mode == CaptureMode.DUAL_VIDEO) dual.boundVideoInset else null
+        val request = appSettings?.stamp?.takeIf { it.enabled || pipFrame != null }?.let { preferences ->
             VideoStampRequest(
                 startedAtMillis = startedAt,
                 preferences = preferences,
-                samples = samples.ifEmpty { listOf(videoStampSample(startedAt, startedAt)) }
+                samples = samples.ifEmpty { listOf(videoStampSample(startedAt, startedAt)) },
+                pipFrame = pipFrame
             )
         }
         container.videoCapture.process(file, request, keepOriginal = appSettings?.storage?.saveOriginal == true) { outcome ->
@@ -633,9 +670,12 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         val data = StampData(input.nowMillis, fix, compassRepository.heading.value, address.text, nearby.weather?.value, address.source)
         val resources = container.stampResources
         val content = resources.contentBuilder().build(data, input.settings.stamp, nearby.map != null, input.logo != null)
+        // On screen the card sits clear of the controls; the saved photo or video keeps it at the frame edge.
         resources.renderer().render(
             Canvas(bitmap), bitmap.width, bitmap.height, content,
-            StampStyle.from(input.settings.stamp), nearby.map?.value, input.logo
+            StampStyle.from(input.settings.stamp), nearby.map?.value, input.logo,
+            safeTop = input.safeArea.topIncludingRail * bitmap.height,
+            safeBottom = input.safeArea.bottom * bitmap.height
         )
         return bitmap
     }

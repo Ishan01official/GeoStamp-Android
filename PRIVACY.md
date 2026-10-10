@@ -1,6 +1,6 @@
 # GeoStamp privacy
 
-Updated: 2026-10-10. Describes the current source implementation.
+Updated: 2026-10-10. Describes the current source implementation. The same policy is available offline inside the app under Settings → About → Privacy policy.
 
 GeoStamp has no advertising, analytics, crash reporting or account SDKs. Photos and videos are processed on the device and saved to `Pictures/GeoStamp` and `Movies/GeoStamp`. Nothing is uploaded automatically, and app data is excluded from cloud backup and device transfer.
 
@@ -23,7 +23,7 @@ off by default. Capturing photos and videos does not require a network connectio
 | Feature | Sent to | Data sent |
 |---|---|---|
 | Address lookup | Your phone's platform geocoder (on most phones, Google) | Current coordinates |
-| Map thumbnails | OpenStreetMap tile servers (`tile.openstreetmap.org`) | The map tiles around your position, which reveal approximate location. Tiles are cached on the device for 7 days |
+| Map thumbnails | The provider of the selected map type: OpenStreetMap (`tile.openstreetmap.org`) for Normal and Hybrid, OpenTopoMap (`tile.opentopomap.org`) for Terrain, EOX (`tiles.maps.eox.at`) for Satellite and Hybrid | The map tiles around your position, which reveal approximate location and your IP address. Tiles are cached on the device for 7 days |
 | Weather | Open-Meteo (`api.open-meteo.com`) | Coordinates rounded to 3 decimals (about 100 m) |
 
 Results are prefetched asynchronously while the camera is in use and only used for captures near the place they were fetched for. This does not request background location. The shutter never waits for the network, and missing data is left off the stamp rather than guessed.
@@ -43,11 +43,19 @@ This document describes the source implementation; it is not an independent secu
 - The Camera diagnostics report stays on the phone unless you choose Share.
 
 
+## Location QR codes
+
+QR codes are generated on the phone. They contain only a Google Maps link with the
+coordinates, for example `https://www.google.com/maps/search/?api=1&query=28.613900,77.209000`.
+Anyone who scans a stamped photo's code can see that location. Turn the QR field off or
+choose another template if a photo should not carry one. Share QR passes the image and link
+only to the destination you choose.
+
 ## User-initiated sharing and map links
 
 Sharing sends only the selected media or diagnostics report through Android's
 share sheet to the destination you choose. Opening a saved photo in Google Maps
-or OpenStreetMap passes its recorded coordinates to that destination. The map
+(the default) or OpenStreetMap passes its recorded coordinates to that destination. The map
 button is available only when the photo has GPS metadata; GPS EXIF writing is
 separate from the visible stamp and remains off by default.
 

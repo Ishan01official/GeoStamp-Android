@@ -12,6 +12,8 @@ import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
 import android.text.TextUtils
+import com.geostamp.camera.qr.QrDrawing
+import com.geostamp.camera.qr.QrLocationEncoder
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -39,8 +41,7 @@ data class StampStyle(
  * The renderer only draws over the card area; the photograph itself is never replaced.
  */
 class StampRenderer(
-    private val iconProvider: (StampIcon) -> Drawable? = { null },
-    private val mapAttribution: String = "© OpenStreetMap"
+    private val iconProvider: (StampIcon) -> Drawable? = { null }
 ) {
     fun render(
         canvas: Canvas,
@@ -49,35 +50,40 @@ class StampRenderer(
         content: StampContent,
         style: StampStyle,
         map: Bitmap? = null,
-        logo: Bitmap? = null
+        logo: Bitmap? = null,
+        safeTop: Float = 0f,
+        safeBottom: Float = 0f
     ) {
         if (content.isEmpty || width <= 0 || height <= 0) return
         val metrics = Metrics(min(width, height), style.fontScale, content.compact)
         val showMap = content.showMap
         val showLogo = content.showLogo && logo != null
+        val qr = content.qrPayload?.let { runCatching { QrLocationEncoder.encode(it) }.getOrNull() }
 
         val maxCardWidth = width - 2 * metrics.margin
         val mapSize = if (showMap) metrics.mapSize else 0f
         val logoSize = if (showLogo) metrics.logoSize else 0f
-        val textMaxWidth = maxCardWidth - 2 * metrics.padding - mapSize.withGap(metrics) - logoSize.withGap(metrics)
+        val qrSize = if (qr != null) metrics.qrSize else 0f
+        val textMaxWidth = maxCardWidth - 2 * metrics.padding - mapSize.withGap(metrics) - logoSize.withGap(metrics) - qrSize.withGap(metrics)
         if (textMaxWidth <= metrics.body) return
 
         val rows = buildRows(content, style, metrics, textMaxWidth.toInt())
         val textHeight = rows.sumOf { it.height.toDouble() }.toFloat() +
             metrics.rowGap * (rows.size - 1).coerceAtLeast(0) + separatorSpace(rows, metrics)
-        val innerHeight = max(textHeight, max(mapSize, logoSize))
+        val innerHeight = maxOf(textHeight, mapSize, logoSize, qrSize)
         val cardHeight = innerHeight + 2 * metrics.padding
         val cardWidth = if (content.compact && !showMap) {
             val widest = rows.maxOfOrNull { it.contentWidth } ?: 0f
-            min(maxCardWidth, widest + metrics.iconSize + metrics.iconGap + 2 * metrics.padding + logoSize.withGap(metrics))
+            min(maxCardWidth, widest + metrics.iconSize + metrics.iconGap + 2 * metrics.padding + logoSize.withGap(metrics) + qrSize.withGap(metrics))
         } else {
             maxCardWidth
         }
 
         val left = metrics.margin
+        // safeTop and safeBottom are bands covered by on-screen controls; zero for saved photos and videos.
         val top = when (style.position) {
-            StampPosition.BOTTOM -> height - metrics.margin - cardHeight
-            StampPosition.TOP -> metrics.margin
+            StampPosition.BOTTOM -> (height - metrics.margin - safeBottom - cardHeight).coerceAtLeast(metrics.margin + safeTop)
+            StampPosition.TOP -> metrics.margin + safeTop
         }
         val card = RectF(left, top, left + cardWidth, top + cardHeight)
         drawCard(canvas, card, style, metrics)
@@ -93,8 +99,15 @@ class StampRenderer(
             }
             contentLeft += mapSize + metrics.columnGap
         }
+        var rightEdge = card.right - metrics.padding
+        if (qr != null) {
+            // The QR's white square already contains its quiet zone, and text never enters this column.
+            val qrTop = card.top + metrics.padding + (innerHeight - qrSize) / 2f
+            QrDrawing.draw(canvas, qr, RectF(rightEdge - qrSize, qrTop, rightEdge, qrTop + qrSize))
+            rightEdge -= qrSize + metrics.columnGap
+        }
         if (showLogo) {
-            val logoLeft = card.right - metrics.padding - logoSize
+            val logoLeft = rightEdge - logoSize
             drawLogo(canvas, logo!!, RectF(logoLeft, card.top + metrics.padding, logoLeft + logoSize, card.top + metrics.padding + logoSize))
         }
 
@@ -143,7 +156,9 @@ class StampRenderer(
                 add(Row(StampIcon.TIME, layout(it, paint(metrics.body, style.textColor, 1f, bold = true), textWidth, 1), isDate = true))
             }
             content.headline?.let {
-                add(Row(StampIcon.PLACE, layout(it, paint(metrics.headline, style.textColor, 1f, bold = true), textWidth, 2), isDate = false))
+                // Full addresses wrap to four lines on cards and two on the compact template; only then is the end trimmed.
+                val lines = if (content.compact) 2 else HEADLINE_MAX_LINES
+                add(Row(StampIcon.PLACE, layout(it, paint(metrics.headline, style.textColor, 1f, bold = true), textWidth, lines), isDate = false))
             }
             content.details.forEach { line ->
                 val alpha = if (line.emphasis == StampLine.Emphasis.PRIMARY) 0.95f else SECONDARY_ALPHA
@@ -189,22 +204,8 @@ class StampRenderer(
         val radius = metrics.corner * 0.7f
         canvas.save()
         canvas.clipPath(Path().apply { addRoundRect(rect, radius, radius, Path.Direction.CW) })
+        // Tile thumbnails carry their provider's attribution; see MapTileRenderer.
         canvas.drawBitmap(map, null, rect, Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG))
-
-        val attribution = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-            textSize = rect.height() * 0.075f
-            color = Color.argb(220, 40, 40, 40)
-        }
-        val textWidth = attribution.measureText(mapAttribution)
-        val pad = rect.height() * 0.025f
-        canvas.drawRect(
-            rect.right - textWidth - 2 * pad,
-            rect.bottom - attribution.textSize - 2 * pad,
-            rect.right,
-            rect.bottom,
-            Paint().apply { color = Color.argb(170, 255, 255, 255) }
-        )
-        canvas.drawText(mapAttribution, rect.right - textWidth - pad, rect.bottom - pad * 1.6f, attribution)
         canvas.restore()
 
         drawMarker(canvas, rect.centerX(), rect.centerY(), rect.width() * 0.07f)
@@ -297,6 +298,9 @@ class StampRenderer(
         val hairline = max(1f, unit * 0.12f)
         val mapSize = body * 6.2f
         val logoSize = body * 2.6f
+
+        /** Never below [QR_MIN_FRACTION] of the short side, so the code still scans after messaging apps shrink the photo. */
+        val qrSize = max(mapSize, shortSide * QR_MIN_FRACTION)
     }
 
     private companion object {
@@ -304,6 +308,8 @@ class StampRenderer(
         const val ICON_ALPHA = 0.8f
         const val SEPARATOR_ALPHA = 0.18f
         const val OUTLINE_ALPHA = 28
+        const val QR_MIN_FRACTION = 0.18f
+        const val HEADLINE_MAX_LINES = 4
         val MARKER_COLOR = Color.rgb(26, 115, 232)
     }
 }

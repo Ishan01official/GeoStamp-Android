@@ -15,6 +15,7 @@ import com.geostamp.camera.capture.CaptureTimer
 import com.geostamp.camera.capture.FlashMode
 import com.geostamp.camera.capture.PhotoAspectRatio
 import com.geostamp.camera.capture.PhotoResolution
+import com.geostamp.camera.maps.MapType
 import com.geostamp.camera.stamps.CoordinateFormat
 import com.geostamp.camera.stamps.StampDateFormat
 import com.geostamp.camera.stamps.StampFields
@@ -81,6 +82,7 @@ private object Keys {
     val mapTiles = booleanPreferencesKey("services.map_tiles")
     val weather = booleanPreferencesKey("services.weather")
     val mapLink = stringPreferencesKey("services.map_link")
+    val mapType = stringPreferencesKey("services.map_type")
 
     val saveOriginal = booleanPreferencesKey("storage.save_original")
     val jpegQuality = intPreferencesKey("storage.jpeg_quality")
@@ -125,7 +127,8 @@ private fun Preferences.toAppSettings(): AppSettings {
             addressLookup = this[Keys.address] ?: defaults.services.addressLookup,
             mapTiles = this[Keys.mapTiles] ?: defaults.services.mapTiles,
             weather = this[Keys.weather] ?: defaults.services.weather,
-            mapLinkProvider = enumOf(Keys.mapLink, MapLinkProvider.OPEN_STREET_MAP)
+            mapLinkProvider = enumOf(Keys.mapLink, defaults.services.mapLinkProvider),
+            mapType = enumOf(Keys.mapType, defaults.services.mapType)
         ),
         storage = StorageSettings(
             saveOriginal = this[Keys.saveOriginal] ?: defaults.storage.saveOriginal,
@@ -171,6 +174,7 @@ private fun Preferences.readFields(template: StampTemplate): StampFields {
         speed = flag("speed", d.speed),
         weather = flag("weather", d.weather),
         map = flag("map", d.map),
+        qrCode = flag("qr_code", d.qrCode),
         customText = flag("custom_text", d.customText),
         logo = flag("logo", d.logo)
     )
@@ -218,6 +222,7 @@ private fun MutablePreferences.write(settings: AppSettings) {
         this@write[Keys.mapTiles] = mapTiles
         this@write[Keys.weather] = weather
         this@write[Keys.mapLink] = mapLinkProvider.name
+        this@write[Keys.mapType] = mapType.name
     }
 
     this[Keys.saveOriginal] = settings.storage.saveOriginal
@@ -238,6 +243,7 @@ private fun MutablePreferences.writeFields(template: StampTemplate, fields: Stam
     this[Keys.field(template, "speed")] = fields.speed
     this[Keys.field(template, "weather")] = fields.weather
     this[Keys.field(template, "map")] = fields.map
+    this[Keys.field(template, "qr_code")] = fields.qrCode
     this[Keys.field(template, "custom_text")] = fields.customText
     this[Keys.field(template, "logo")] = fields.logo
 }
