@@ -47,7 +47,7 @@ class StampContentBuilderTest {
 
         assertNull(content.headline)
         assertFalse(content.showMap)
-        assertEquals(listOf("29.007953, 77.767663", "GPS ±5 m"), content.details.map { it.text })
+        assertEquals(listOf("29.007953, 77.767663", "GPS ±5 m", "Alt 220 m · 5.4 km/h"), content.details.map { it.text })
     }
 
     @Test

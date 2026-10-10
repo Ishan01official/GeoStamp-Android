@@ -35,6 +35,9 @@ enum class StampTemplate(val defaultFields: StampFields, val compact: Boolean) {
             coordinates = true,
             accuracy = true,
             heading = true,
+            altitude = true,
+            speed = true,
+            weather = true,
             map = true
         ),
         compact = false

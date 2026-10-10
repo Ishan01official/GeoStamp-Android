@@ -3,7 +3,7 @@ package com.geostamp.camera.stamps
 /** User-facing stamp configuration. Online-only fields stay opt-in through [com.geostamp.camera.settings.OnlineServices]. */
 data class StampPreferences(
     val enabled: Boolean = true,
-    val template: StampTemplate = StampTemplate.CLASSIC,
+    val template: StampTemplate = StampTemplate.PROFESSIONAL,
     val fieldsByTemplate: Map<StampTemplate, StampFields> = StampTemplate.defaultFieldMap(),
     val position: StampPosition = StampPosition.BOTTOM,
     val fontScale: Float = 1f,
