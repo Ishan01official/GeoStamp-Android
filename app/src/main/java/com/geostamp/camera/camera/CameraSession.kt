@@ -26,6 +26,7 @@ import androidx.camera.view.video.AudioConfig
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.Observer
 import com.geostamp.camera.capture.CaptureMode
 import com.geostamp.camera.capture.FlashMode
 import com.geostamp.camera.capture.LensFacing
@@ -37,6 +38,9 @@ import java.util.Date
 import java.util.Locale
 import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /** Desired camera configuration; applied incrementally so unchanged values never trigger a rebind. */
 data class CameraConfig(
@@ -68,17 +72,44 @@ class CameraSession(context: Context) {
 
     val zoomState: LiveData<ZoomState> get() = controller.zoomState
 
-    fun bind(owner: LifecycleOwner) = controller.bindToLifecycle(owner)
+    private val _boundCamera = MutableStateFlow<BoundCamera?>(null)
 
-    fun unbind() = controller.unbind()
+    /**
+     * The camera CameraX has actually opened. CameraX re-points [zoomState] at the new camera on every
+     * bind and lens switch, so observing it is a reliable "binding completed" signal. The provider's
+     * initialization future completes earlier, before any camera is bound, which is why flash
+     * capability must not be read there.
+     */
+    val boundCamera: StateFlow<BoundCamera?> = _boundCamera.asStateFlow()
+    private val bindObserver = Observer<ZoomState> { publishBoundCamera() }
+
+    fun bind(owner: LifecycleOwner) {
+        controller.bindToLifecycle(owner)
+        controller.zoomState.removeObserver(bindObserver)
+        controller.zoomState.observe(owner, bindObserver)
+        publishBoundCamera()
+    }
+
+    fun unbind() {
+        controller.zoomState.removeObserver(bindObserver)
+        controller.unbind()
+        _boundCamera.value = null
+    }
 
     fun onInitialized(listener: () -> Unit) =
         controller.initializationFuture.addListener(listener, mainExecutor)
 
+    private fun publishBoundCamera() {
+        val info = controller.cameraInfo ?: return
+        val lens = when (info.lensFacing) {
+            CameraSelector.LENS_FACING_FRONT -> LensFacing.FRONT
+            else -> LensFacing.BACK
+        }
+        _boundCamera.value = BoundCamera(lens = lens, hasFlashUnit = info.hasFlashUnit())
+    }
+
     fun hasLens(lens: LensFacing): Boolean =
         runCatching { controller.hasCamera(lens.selector()) }.getOrDefault(lens == LensFacing.BACK)
-
-    fun hasFlashUnit(): Boolean = controller.cameraInfo?.hasFlashUnit() ?: false
 
     fun exposureState(): ExposureState? = controller.cameraInfo?.exposureState
 

@@ -174,13 +174,19 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
                 if (cameraCapabilities.dualVideoSupported) add(CaptureMode.DUAL_VIDEO)
             }
             _capture.update {
-                it.copy(
-                    hasFrontCamera = session.hasLens(LensFacing.FRONT),
-                    hasFlashUnit = session.hasFlashUnit(),
-                    supportedModes = supportedModes,
-                    cameraReady = true
-                )
+                it.copy(hasFrontCamera = session.hasLens(LensFacing.FRONT), supportedModes = supportedModes)
             }
+        }
+        viewModelScope.launch {
+            combine(session.boundCamera, _capture.map { it.lens }.distinctUntilChanged()) { bound, lens -> bound to lens }
+                .collect { (bound, lens) ->
+                    _capture.update {
+                        it.copy(
+                            hasFlashUnit = FlashAvailability.resolve(lens, bound),
+                            cameraReady = bound != null && bound.lens == lens
+                        )
+                    }
+                }
         }
     }
 
@@ -229,7 +235,6 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         val next = if (state.lens == LensFacing.BACK) LensFacing.FRONT else LensFacing.BACK
         _capture.update { it.copy(lens = next) }
         applyCameraConfig()
-        session.onInitialized { _capture.update { it.copy(hasFlashUnit = session.hasFlashUnit()) } }
     }
 
     fun setZoom(ratio: Float) = session.setZoomRatio(ratio)
