@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.geostamp.camera"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.geostamp.camera"

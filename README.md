@@ -1,6 +1,6 @@
-# GeoStamp Android
+# GPS Map Camera: GeoStamp
 
-A privacy-first, ad-free GPS camera for Android. Photos and videos carry a stamp with the date, time, place and coordinates, and the camera works fully offline.
+A privacy-first, ad-free GPS map camera for Android. Photos and videos can carry a visible stamp with the date, time, address, map and coordinates, while media processing stays on the device.
 
 ## Features (source v0.5.0)
 
@@ -21,6 +21,7 @@ A privacy-first, ad-free GPS camera for Android. Photos and videos carry a stamp
 - Large text and touch targets, TalkBack labels and a Simple Camera Mode.
 - **Follows the system language**, or the one chosen in Settings > Language. English (fallback), Hindi, Spanish, French, German, Portuguese, Japanese, Korean, Simplified Chinese and Arabic, with right-to-left layout for Arabic. Android 13+ also lists these languages under per-app language settings. Dates use the device language, while coordinates, links and the temperature unit stay independent of it. Addresses are formatted from normalized components, so any country's structure works and empty or placeholder values never appear.
 - Settings > Camera diagnostics lists the phone's cameras, concurrent-camera support and sensors, and can be shared.
+- **Ad-free and tracker-free by design.** No advertising, analytics, crash-reporting or account SDKs are included in the current source.
 
 Architecture: single activity, Jetpack Compose, MVVM with StateFlow, DataStore settings, CameraX (single and concurrent cameras), and AndroidX Media3 (Transformer for video stamping, ExoPlayer for playback). The stamp engine (`stamps/`), photo pipeline (`capture/`), video pipeline (`video/`), dual capture (`dual/`) and address handling (`address/`, `environment/`) have no UI dependencies.
 
@@ -62,14 +63,14 @@ geocoding for both supplied coordinates and the photo/video pipelines. See the
 [current progress](docs/progress-report.md#current-status--address-detail-and-service-defaults).
 The recorded default-service verification passed all 115 unit tests, APK build and lint (zero
 errors; 20 dependency-version warnings), including enabled defaults and saved
-opt-outs. The updated APK was installed on the test phone. These changes are
-included in the current source. Device evidence describes the recorded test runs;
-release publication and broader device coverage are tracked separately.
+opt-outs. The updated APK was installed on the test phone. These recorded results predate the
+v0.4.0 Play-readiness build changes; the release branch must pass CI and the manual device
+matrix in [the Play Store release checklist](docs/play-store-release-checklist.md) before publication.
 
 ## Build and install
 
-Requires JDK 17, Android SDK Platform 35 and Build Tools 35.0.0. Runs on Android
-10 (API 29) and newer. The repository includes the Gradle 8.9 wrapper.
+Requires JDK 17, Android SDK Platform 36 and a compatible Android SDK Build Tools installation. Runs on Android
+10 (API 29) and newer. The repository uses Android Gradle Plugin 8.10.1 and the Gradle 8.11.1 wrapper.
 
 ```bash
 git clone https://github.com/Ishan01official/GeoStamp-Android.git
@@ -80,13 +81,22 @@ Open the project in Android Studio and configure your SDK, or set
 `ANDROID_HOME` to its location. Then run:
 
 ```bash
-./gradlew --no-daemon assembleDebug testDebugUnitTest lintDebug
+./gradlew --no-daemon assembleDebug testDebugUnitTest lintDebug bundleRelease
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
 `adb install -r` requires a connected device and preserves existing app data when
-signatures match. Build output is a debug APK, not a signed store release.
+signatures match. `bundleRelease` produces an unsigned release AAB unless signing is configured.
+Google Play App Signing should be configured in Play Console for the production release.
 See [contribution and test setup](CONTRIBUTING.md) for device-test fixtures.
+
+## Google Play preparation
+
+- Recommended Play title: **GPS Map Camera: GeoStamp**
+- Launcher label: **GPS Map Camera**
+- Store listing copy and screenshot plan: [docs/play-store-listing.md](docs/play-store-listing.md)
+- Release/device checklist: [docs/play-store-release-checklist.md](docs/play-store-release-checklist.md)
+- Privacy policy source: [PRIVACY.md](PRIVACY.md)
 
 ## Known limitations
 
@@ -99,12 +109,14 @@ See [contribution and test setup](CONTRIBUTING.md) for device-test fixtures.
 - Translations other than Hindi were written without native-speaker review yet.
 - Satellite thumbnails are low resolution (Sentinel-2, about 10 m per pixel) and licensed for non-commercial use only.
 - Approximate-only location, disabled providers, no-compass hardware and additional
-  devices still need the checks listed in the roadmap.
+  devices still need the checks listed in the roadmap and release checklist.
 
 ## Documentation
 
 - [Documentation index](docs/README.md)
 - [Privacy and third-party services](PRIVACY.md)
+- [Play Store listing](docs/play-store-listing.md)
+- [Play Store release checklist](docs/play-store-release-checklist.md)
 - [Current progress and verification](docs/progress-report.md)
 - [Remaining work](docs/roadmap.md)
 - [Change history](CHANGELOG.md)
