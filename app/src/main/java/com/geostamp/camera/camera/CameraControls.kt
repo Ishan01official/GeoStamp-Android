@@ -230,7 +230,7 @@ fun ZoomSelector(
             val description = stringResource(R.string.cd_zoom, ZoomPresets.label(preset))
             Box(
                 Modifier
-                    .size(Dimens.TouchTarget - 4.dp)
+                    .size(Dimens.TouchTarget)
                     .clip(CircleShape)
                     .clickable(role = Role.Button) { onSelect(preset) }
                     .semantics {

@@ -25,4 +25,5 @@ internal val GeoStampTypography = Typography(
 /** Monospaced digits keep live readouts (accuracy, heading, timers) from jittering. */
 val TabularNumbers = TextStyle(fontFeatureSettings = "tnum")
 
-val CameraLabel = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Medium, fontFeatureSettings = "tnum")
+/** Camera overlay text. 15sp minimum for readability by older users; still follows system font scale. */
+val CameraLabel = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Medium, fontFeatureSettings = "tnum")

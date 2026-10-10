@@ -12,7 +12,7 @@ object Dimens {
     val SpaceXxl = 32.dp
 
     val TouchTarget = 48.dp
-    val ChipHeight = 32.dp
+    val ChipHeight = 36.dp
     val IconSmall = 18.dp
     val Icon = 22.dp
 

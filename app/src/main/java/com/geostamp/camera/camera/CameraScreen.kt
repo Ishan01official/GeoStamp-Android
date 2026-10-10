@@ -263,7 +263,8 @@ private fun CameraScreen(
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             when (event) {
-                CameraEvent.ShutterFeedback -> scope.launch {
+                // Respect "Remove animations": no full-screen flash for users sensitive to motion.
+                CameraEvent.ShutterFeedback -> if (context.animationsEnabled()) scope.launch {
                     shutterFlash.snapTo(0.85f)
                     shutterFlash.animateTo(0f, tween(220))
                 }
@@ -534,6 +535,9 @@ private fun KeepPortrait() {
         onDispose { activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED }
     }
 }
+
+private fun Context.animationsEnabled(): Boolean =
+    Settings.Global.getFloat(contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f
 
 private fun Context.hasPermission(permission: String): Boolean =
     ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
