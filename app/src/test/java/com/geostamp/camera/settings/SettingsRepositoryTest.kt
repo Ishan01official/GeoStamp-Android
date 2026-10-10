@@ -21,6 +21,25 @@ import org.junit.rules.TemporaryFolder
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SettingsRepositoryTest {
+    @Test
+    fun addressDetailDefaultsToDetailedAndPersists() = runTest {
+        val repository = repository("address-detail.preferences_pb")
+        assertEquals(com.geostamp.camera.environment.AddressDetail.DETAILED, repository.settings.first().location.addressDetail)
+        repository.update { it.copy(location = it.location.copy(addressDetail = com.geostamp.camera.environment.AddressDetail.SHORT)) }
+        assertEquals(com.geostamp.camera.environment.AddressDetail.SHORT, repository.settings.first().location.addressDetail)
+    }
+
+    @Test
+    fun legacyHouseNumberFlagDoesNotSuppressNewDetailedDefault() = runTest {
+        val dataStore = dataStore(File(temporaryFolder.root, "legacy-address.preferences_pb"))
+        dataStore.edit {
+            it[booleanPreferencesKey("location.show_house_numbers")] = false
+            it[stringPreferencesKey("location.address_detail")] = "UNKNOWN"
+        }
+        assertEquals(com.geostamp.camera.environment.AddressDetail.DETAILED,
+            SettingsRepository(dataStore).settings.first().location.addressDetail)
+    }
+
     @get:Rule val temporaryFolder = TemporaryFolder()
 
     @Test
@@ -37,8 +56,31 @@ class SettingsRepositoryTest {
             assertTrue(address)
             assertTrue(coordinates)
         }
-        // Map thumbnails need network consent; the stamp falls back to a coordinate panel until given.
-        assertEquals(false, settings.services.mapTiles)
+        assertTrue(settings.services.addressLookup)
+        assertTrue(settings.services.mapTiles)
+        assertFalse(settings.services.weather)
+        assertEquals(AppSettings().services, settings.services)
+    }
+
+    @Test
+    fun onlineServiceOptOutsPersistAcrossUnrelatedSettingsChanges() = runTest {
+        val repository = repository("service-opt-outs.preferences_pb")
+        repository.update { it.copy(services = it.services.copy(addressLookup = false, mapTiles = false)) }
+        repository.update { it.copy(camera = it.camera.copy(gridEnabled = true)) }
+        val settings = repository.settings.first()
+        assertFalse(settings.services.addressLookup)
+        assertFalse(settings.services.mapTiles)
+        assertFalse(settings.services.weather)
+    }
+
+    @Test
+    fun missingServiceKeysUseNewDefaultsWithoutOverridingStoredChoices() = runTest {
+        val dataStore = dataStore(File(temporaryFolder.root, "partial-service-settings.preferences_pb"))
+        dataStore.edit { it[booleanPreferencesKey("services.address")] = false }
+        val settings = SettingsRepository(dataStore).settings.first()
+        assertFalse(settings.services.addressLookup)
+        assertTrue(settings.services.mapTiles)
+        assertFalse(settings.services.weather)
     }
 
     @Test

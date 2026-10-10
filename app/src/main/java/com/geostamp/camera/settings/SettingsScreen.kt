@@ -166,12 +166,17 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onOpenStamp
                         onCheckedChange = { v -> update { it.copy(services = it.services.copy(addressLookup = v)) } },
                         icon = Icons.Outlined.Place
                     )
-                    SwitchRow(
-                        title = stringResource(R.string.setting_house_numbers),
-                        summary = stringResource(R.string.setting_house_numbers_summary),
-                        checked = settings.location.showHouseNumbers,
-                        enabled = settings.services.addressLookup,
-                        onCheckedChange = { v -> update { it.copy(location = it.location.copy(showHouseNumbers = v)) } }
+                    ChoiceRow(
+                        title = stringResource(R.string.setting_address_detail),
+                        options = com.geostamp.camera.environment.AddressDetail.entries,
+                        selected = settings.location.addressDetail,
+                        label = { stringResource(when (it) {
+                            com.geostamp.camera.environment.AddressDetail.DETAILED -> R.string.address_detail_detailed
+                            com.geostamp.camera.environment.AddressDetail.STANDARD -> R.string.address_detail_standard
+                            com.geostamp.camera.environment.AddressDetail.SHORT -> R.string.address_detail_short
+                        }) },
+                        onSelect = { v -> update { it.copy(location = it.location.copy(addressDetail = v)) } },
+                        icon = Icons.Outlined.Place
                     )
                 }
             }

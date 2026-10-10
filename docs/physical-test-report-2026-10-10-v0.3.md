@@ -1,5 +1,12 @@
 # Physical device test report: v0.3.0, 10 October 2026
 
+Status note: this report records the v0.3.0 test run before the address-completeness
+and default-service updates. The earlier short address and disabled defaults below
+are historical observations. Current source preserves provider address detail and
+defaults address lookup and map thumbnails to on; saved service choices remain
+respected. See [current progress](progress-report.md#current-status--address-detail-and-service-defaults)
+and [address verification](address-detail-verification-2026-10-10.md).
+
 Device: Nothing Phone (2a), model A142 (Pacman), Android 16 (API 36), ADB serial `00069343J001241`.
 Branch: `fix/video-stamp-dual-capture-release`. Every result below comes from this branch's builds, installed with `adb install -r` so app data was kept.
 

@@ -9,9 +9,14 @@ GeoStamp has no advertising, analytics, crash reporting or account SDKs. Photos 
 | Camera | Take photos and videos | Required for the camera screen |
 | Location (precise or approximate) | Coordinates, accuracy and true-north heading on stamps | Optional. Foreground only, while the camera screen is open. No background location |
 | Microphone | Sound in videos | Optional. Requested when switching to Video. Videos record silently without it, and the app says so while recording |
-| Internet | Only for the optional online features below | Never used unless you turn a feature on |
+| Internet | Address lookup, map thumbnails and optional weather | Address and map requests can run after location permission is granted; weather requires enabling its setting |
 
-## Optional online features (all off by default)
+## Online features
+
+Address lookup and map thumbnails are on by default. They run for available
+foreground camera locations after location permission is granted. You can disable
+either in Settings, and saved off choices remain off across updates. Weather is
+off by default. Capturing photos and videos does not require a network connection.
 
 | Feature | Sent to | Data sent |
 |---|---|---|
@@ -19,7 +24,7 @@ GeoStamp has no advertising, analytics, crash reporting or account SDKs. Photos 
 | Map thumbnails | OpenStreetMap tile servers (`tile.openstreetmap.org`) | The map tiles around your position, which reveal approximate location. Tiles are cached on the device for 7 days |
 | Weather | Open-Meteo (`api.open-meteo.com`) | Coordinates rounded to 3 decimals (about 100 m) |
 
-Results are fetched in the background and only used for photos taken near the place they were fetched for. The shutter never waits for the network, and missing data is left off the stamp rather than guessed.
+Results are prefetched asynchronously while the camera is in use and only used for captures near the place they were fetched for. This does not request background location. The shutter never waits for the network, and missing data is left off the stamp rather than guessed.
 
 ## Metadata
 

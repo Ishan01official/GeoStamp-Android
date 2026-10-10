@@ -143,9 +143,9 @@
     <string name="compass_smoothing_balanced">संतुलित</string>
     <string name="compass_smoothing_responsive">तेज़ प्रतिक्रिया</string>
     <string name="setting_address">पता खोज</string>
-    <string name="setting_address_summary">निर्देशांक आपके फ़ोन के जियोकोडिंग प्रदाता को भेजता है। डिफ़ॉल्ट रूप से बंद।</string>
+    <string name="setting_address_summary">निर्देशांक आपके फ़ोन के जियोकोडिंग प्रदाता को भेजता है। डिफ़ॉल्ट रूप से चालू; आप इसे बंद कर सकते हैं।</string>
     <string name="setting_map_tiles">मैप थंबनेल</string>
-    <string name="setting_map_tiles_summary">स्टैम्प के छोटे नक्शे के लिए OpenStreetMap टाइल डाउनलोड करता है। डिफ़ॉल्ट रूप से बंद।</string>
+    <string name="setting_map_tiles_summary">स्टैम्प के छोटे नक्शे के लिए OpenStreetMap टाइल डाउनलोड करता है। डिफ़ॉल्ट रूप से चालू; आप इसे बंद कर सकते हैं।</string>
     <string name="setting_map_link">लोकेशन यहाँ खोलें</string>
     <string name="map_osm">OpenStreetMap</string>
     <string name="map_google">Google Maps</string>
@@ -270,8 +270,10 @@
     <string name="address_edit_note">GPS निर्देशांक नहीं बदले जाते। फ़ोटो के विवरण में दिखेगा कि पता हाथ से लिखा गया था।</string>
     <string name="address_restore">अपने आप मिला पता इस्तेमाल करें</string>
     <string name="save">सहेजें</string>
-    <string name="setting_house_numbers">मकान नंबर दिखाएँ</string>
-    <string name="setting_house_numbers_summary">केवल तब जब सटीक स्थिति पर दो बार एक ही नंबर मिले। मैप सेवाएँ अक्सर मकान नंबर गलत बताती हैं।</string>
+    <string name="setting_address_detail">पते का विवरण</string>
+    <string name="address_detail_detailed">विस्तृत</string>
+    <string name="address_detail_standard">मानक</string>
+    <string name="address_detail_short">संक्षिप्त</string>
     <string name="info_address_source">पता</string>
     <string name="info_address_manual">हाथ से लिखा गया</string>
     <string name="info_address_detected">जगह से अपने आप मिला</string>

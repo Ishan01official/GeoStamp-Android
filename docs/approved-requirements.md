@@ -31,7 +31,7 @@ This document is a **requirements register**, not a claim that all items are imp
 
 ### Acceptance constraints
 - Offline photo capture never requires network access.
-- Network-dependent features are opt-in and must document third-party data sharing.
+- Address lookup and map thumbnails default on, per the user's 2026-10-10 revision, and remain individually switchable. Weather stays opt-in. Document third-party data sharing and retain optional foreground location permission.
 - Never use stale coordinates as if fresh, or manufacture weather/compass readings.
 - Stamped video needs real rendered frames, not just a viewfinder overlay.
 - Preserve image orientation, quality and privacy choices.

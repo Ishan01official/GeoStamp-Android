@@ -1,5 +1,10 @@
 # Physical Device Test Report - 2026-10-10
 
+Historical report for the initial GPS/sensor implementation. Current service
+defaults, detailed-address behavior and validation status are documented in
+[current progress](progress-report.md#current-status--address-detail-and-service-defaults)
+and [address verification](address-detail-verification-2026-10-10.md).
+
 Device tested:
 - Model: A142
 - ADB serial: `00069343J001241`

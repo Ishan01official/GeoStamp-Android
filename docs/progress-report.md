@@ -2,6 +2,34 @@
 
 Updated: 2026-10-10
 
+## Current status — address detail and service defaults
+
+This section supersedes older phase statuses below, which remain historical records.
+
+- Implemented: complete provider address lines and components, Detailed (default) /
+  Standard / Short formatting, duplicate suppression, compatible detail upgrades,
+  spatially limited component caching, and preserved manual address overrides.
+- Implemented: address lookup and OpenStreetMap thumbnails enabled by default for
+  missing preference keys; weather and GPS EXIF writing remain off by default.
+  Location permission remains optional. Existing stored service choices are retained.
+- Camera/photo/video/gallery formatting uses the selected address detail. GPS
+  accuracy policy, stamp design and map renderer are unchanged.
+- Updated README, privacy disclosure, requirements, roadmap and verification report
+  to reflect the current implementation and defaults.
+- Earlier address verification passed 113 unit tests and eight device tests on
+  A142 / Android 16, including both supplied coordinates and photo/video stamping.
+- Current default-service verification: all 115 unit tests pass; `assembleDebug`
+  and `lintDebug` pass, with zero lint errors and 20 dependency-version warnings.
+  Tests cover default-on services, default-off weather, and persisted off choices.
+  The updated APK is installed on the connected phone using `adb install -r`.
+- Address completeness and service-default changes are committed locally; no push
+  or release publication has occurred.
+
+See [address verification](address-detail-verification-2026-10-10.md) and the
+[v0.3.0 device report](physical-test-report-2026-10-10-v0.3.md) for evidence and limits.
+
+## Historical phase reports
+
 This file reports actual implementation status. "Build verified" means the local command below passed:
 
 ```bash
@@ -14,7 +42,7 @@ Debug APK path:
 app/build/outputs/apk/debug/app-debug.apk
 ```
 
-## Current Summary
+## Historical summary — initial phases
 
 - Phase 1 build repair: implemented and build verified.
 - Main branch verification: `main` is updated to `origin/main` and build verified after the Phase 2 merge.
@@ -107,7 +135,7 @@ Completed:
 Still left:
 - Physical-device validation for network provider fallback, approximate location, stale location, and weak signal.
 - Physical-device validation for compass accuracy changes and external true-heading correctness.
-- Full address support is not implemented because online reverse geocoding must remain opt-in.
+- Historical phase limitation: full addresses were not yet implemented. Superseded by complete address formatting and the default-on lookup described in Current status.
 - Google Maps/OpenStreetMap links exist in the model but are not exposed in the UI yet.
 - More automated tests around Android permission/provider failure paths need fakes or instrumentation tests.
 
@@ -324,6 +352,6 @@ Physical-device notes (A142, 2026-10-10):
 
 Still left:
 - Videos are saved without a burned-in stamp (needs a CameraX effect pipeline).
-- Address, map and weather were not exercised on the device because they are off by default.
+- Historical v0.2.0 test limitation: online services were not exercised in that run. Later address tests and current service defaults are recorded in Current status.
 - Front camera, flash, timer, batch stamping, delete consent, landscape captures and Hindi locale still need hands-on device checks.
 - Dependency versions were not upgraded in this change.

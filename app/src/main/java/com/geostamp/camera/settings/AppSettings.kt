@@ -1,6 +1,7 @@
 package com.geostamp.camera.settings
 
 import com.geostamp.camera.capture.CaptureTimer
+import com.geostamp.camera.environment.AddressDetail
 import com.geostamp.camera.capture.FlashMode
 import com.geostamp.camera.capture.PhotoAspectRatio
 import com.geostamp.camera.capture.PhotoResolution
@@ -46,8 +47,7 @@ data class LocationSettings(
     val maxAgeSeconds: Int = 120,
     val displayRefresh: LocationDisplayRefresh = LocationDisplayRefresh.STABLE,
     val compassSmoothing: CompassSmoothing = CompassSmoothing.SMOOTH,
-    /** Off by default: reverse-geocoded house numbers are often wrong even with a good GPS fix. */
-    val showHouseNumbers: Boolean = false
+    val addressDetail: AddressDetail = AddressDetail.DETAILED
 ) {
     companion object {
         val ACCURACY_CHOICES = listOf(10, 25, 50, 100, 200)
@@ -67,10 +67,10 @@ enum class CompassSmoothing(val alpha: Float) {
     RESPONSIVE(0.65f)
 }
 
-/** Network features. All are off by default and only run after the user opts in. */
+/** Address and map services default on; weather remains opt-in. */
 data class OnlineServices(
-    val addressLookup: Boolean = false,
-    val mapTiles: Boolean = false,
+    val addressLookup: Boolean = true,
+    val mapTiles: Boolean = true,
     val weather: Boolean = false,
     val mapLinkProvider: MapLinkProvider = MapLinkProvider.OPEN_STREET_MAP
 ) {

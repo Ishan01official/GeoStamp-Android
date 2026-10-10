@@ -43,22 +43,29 @@ class EnvironmentRepository(
     private var mapJob: Job? = null
     private var addressRequestId = 0L
     private var lastAddressRequestAtMillis = 0L
+    @Volatile private var addressDetail = AddressDetail.DETAILED
 
-    fun onLocation(location: LocationStamp, services: OnlineServices, showHouseNumbers: Boolean = false) {
+    fun onLocation(location: LocationStamp, services: OnlineServices, detail: AddressDetail = AddressDetail.DETAILED) {
+        addressDetail = detail
         val current = _snapshot.value
-        if (!services.addressLookup) _snapshot.update { it.copy(address = null) }
+        if (!services.addressLookup) {
+            addressJob?.cancel()
+            ++addressRequestId
+            _snapshot.update { it.copy(address = null) }
+        }
         if (!services.weather) _snapshot.update { it.copy(weather = null) }
         if (!services.mapTiles) _snapshot.update { it.copy(map = null) }
 
         val now = clock()
         if (services.addressLookup) {
             addressCache.get(location, now)?.let { cached ->
-                _snapshot.update { it.copy(address = Placed(cached.address, cached.near, cached.fetchedAtMillis)) }
+                _snapshot.update { it.copy(address = cached.placed(detail)) }
             }
         }
 
         if (services.addressLookup &&
-            needsRefresh(_snapshot.value.address, location, ADDRESS_TTL) &&
+            needsRefresh(_snapshot.value.address, location, ADDRESS_TTL, ADDRESS_MAX_DISTANCE) &&
+            addressJob?.isActive != true &&
             now - lastAddressRequestAtMillis >= ADDRESS_MIN_REFRESH_INTERVAL
         ) {
             addressJob?.cancel()
@@ -69,13 +76,14 @@ class EnvironmentRepository(
                     .onFailure { Log.w(TAG, "Address lookup failed", it) }
                     .getOrNull()
                     ?.let { parts ->
+                        if (requestId != addressRequestId) return@let
                         val fetchedAt = clock()
                         val address = synchronized(addressStabilizer) {
-                            addressStabilizer.onLookup(parts, location, fetchedAt, showHouseNumbers)
+                            addressStabilizer.onLookup(parts, location, fetchedAt)
                         } ?: return@let
-                        val cached = addressCache.put(address, location, fetchedAt)
+                        val cached = addressCache.put(address, addressStabilizer.currentLocation ?: location, fetchedAt)
                         if (requestId == addressRequestId) {
-                            _snapshot.update { it.copy(address = Placed(cached.address, cached.near, cached.fetchedAtMillis)) }
+                            _snapshot.update { it.copy(address = cached.placed(addressDetail)) }
                         }
                     }
             }
@@ -99,12 +107,13 @@ class EnvironmentRepository(
     }
 
     /** Values valid for a photo taken at [location]; anything else is dropped rather than reused. */
-    fun forCapture(location: LocationStamp?): EnvironmentSnapshot {
+    fun forCapture(location: LocationStamp?, detail: AddressDetail = addressDetail): EnvironmentSnapshot {
         if (location == null) return EnvironmentSnapshot()
         val now = clock()
         val current = _snapshot.value
         return EnvironmentSnapshot(
-            address = current.address?.takeIf { it.isValidFor(location, now, ADDRESS_TTL * 4, MAX_DISTANCE) },
+            address = current.address?.takeIf { it.isValidFor(location, now, ADDRESS_TTL * 4, ADDRESS_MAX_DISTANCE) }
+                ?.let { placed -> addressCache.get(placed.near, now)?.placed(detail) },
             weather = current.weather?.takeIf { it.isValidFor(location, now, WEATHER_TTL * 2, WEATHER_MAX_DISTANCE) },
             map = current.map?.takeIf { it.isValidFor(location, now, MAP_TTL * 4, MAP_MAX_DISTANCE) }
         )
@@ -118,12 +127,16 @@ class EnvironmentRepository(
     private fun needsRefresh(placed: Placed<*>?, location: LocationStamp, ttl: Long, distance: Float = MAX_DISTANCE): Boolean =
         placed == null || !placed.isValidFor(location, clock(), ttl, distance)
 
+    private fun CachedAddress.placed(detail: AddressDetail): Placed<String>? =
+        AddressFormatter.format(parts, detail)?.let { Placed(it, near, fetchedAtMillis) }
+
     private fun Placed<*>.isValidFor(location: LocationStamp, now: Long, ttl: Long, distance: Float): Boolean =
         now - fetchedAtMillis <= ttl && near.distanceMetersTo(location) <= distance
 
     private companion object {
         const val TAG = "EnvironmentRepository"
         const val MAX_DISTANCE = 40f
+        const val ADDRESS_MAX_DISTANCE = 10f
         const val MAP_MAX_DISTANCE = 15f
         const val WEATHER_MAX_DISTANCE = 3_000f
         const val ADDRESS_TTL = 5 * 60_000L

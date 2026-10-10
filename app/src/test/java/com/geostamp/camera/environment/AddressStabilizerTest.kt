@@ -2,103 +2,92 @@ package com.geostamp.camera.environment
 
 import com.geostamp.camera.location.LocationStamp
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class AddressStabilizerTest {
-    private val desk = location(29.007890, 77.767665, accuracy = 4f)
-
-    private fun parts(house: String?, street: String = "Nav Shakti Dham", area: String = "Ganga Nagar") =
-        AddressParts(houseNumber = house, street = street, subLocality = area, locality = "Meerut", adminArea = "Uttar Pradesh", postalCode = "250001", country = "India")
+    private val earlier = LocationStamp(29.007923, 77.767677, 5f, 0L, null, null)
+    private val latest = earlier.copy(latitude = 29.007960, longitude = 77.767680)
+    private val broad = AddressParts(subLocality = "Ganga Nagar", locality = "Meerut", adminArea = "Uttar Pradesh", postalCode = "250001", country = "India")
+    private val detailed = broad.copy(houseNumber = "87", colony = "Nav Shakti Dham",
+        addressLines = listOf("87, Nav Shakti Dham, Ganga Nagar, Meerut, Uttar Pradesh 250001, India"))
 
     @Test
-    fun `formatter drops house number and duplicate place names`() {
-        val text = AddressFormatter.format(parts("98").copy(subLocality = "Meerut"), includeHouseNumber = false)
-        assertEquals("Nav Shakti Dham, Meerut, Uttar Pradesh 250001, India", text)
+    fun providerLineKeepsDetailsAbsentFromStructuredFields() {
+        assertEquals("87, Nav Shakti Dham, Ganga Nagar, Meerut, Uttar Pradesh 250001, India",
+            AddressFormatter.format(broad.copy(addressLines = detailed.addressLines)))
     }
 
     @Test
-    fun `changing house numbers at the same desk never reach the stamp`() {
+    fun standardKeepsColonyAvailableOnlyInProviderLine() {
+        val parts = broad.copy(houseNumber = "87", addressLines = detailed.addressLines)
+        assertEquals("Nav Shakti Dham, Ganga Nagar, Meerut, Uttar Pradesh 250001, India",
+            AddressFormatter.format(parts, AddressDetail.STANDARD))
+    }
+
+    @Test
+    fun preservesEveryDistinctStructuredLevelInGeographicOrder() {
+        val parts = detailed.copy(addressLines = emptyList(), building = "Tower A", street = "Park Road",
+            neighbourhood = "East Quarter", district = "Meerut District")
+        assertEquals("87, Tower A, Park Road, Nav Shakti Dham, East Quarter, Ganga Nagar, Meerut, Meerut District, Uttar Pradesh 250001, India",
+            AddressFormatter.format(parts))
+        assertEquals("87, Nav Shakti Dham, Ganga Nagar, Meerut, Meerut District, Uttar Pradesh 250001, India",
+            AddressFormatter.format(detailed.copy(district = "Meerut District")))
+    }
+
+    @Test
+    fun conflictingUnstructuredDetailsCannotBypassStabilityAsAnUpgrade() {
         val stabilizer = AddressStabilizer()
-        val expected = "Nav Shakti Dham, Ganga Nagar, Meerut, Uttar Pradesh 250001, India"
-        listOf("60", "79", "89", "90", "98", "107").forEachIndexed { i, number ->
-            val shown = stabilizer.onLookup(parts(number), desk.jitter(i), nowMillis = i * 20_000L, showHouseNumbers = false)
-            assertEquals(expected, shown)
+        val original = broad.copy(addressLines = listOf("12, Cedar Society, Ganga Nagar, Meerut, Uttar Pradesh 250001, India"))
+        val conflict = broad.copy(addressLines = listOf("99, Different Larger Society, Ganga Nagar, Meerut, Uttar Pradesh 250001, India"))
+        stabilizer.onLookup(original, earlier, 0L)
+        assertEquals(original, stabilizer.onLookup(conflict, latest, 1_000L))
+    }
+
+    @Test
+    fun formatsThreeLevelsWithoutFabricatingOrDuplicatingComponents() {
+        assertEquals("87, Nav Shakti Dham, Ganga Nagar, Meerut, Uttar Pradesh 250001, India", AddressFormatter.format(detailed))
+        assertEquals("Nav Shakti Dham, Ganga Nagar, Meerut, Uttar Pradesh 250001, India", AddressFormatter.format(detailed, AddressDetail.STANDARD))
+        assertEquals("Ganga Nagar, Meerut, Uttar Pradesh, India", AddressFormatter.format(detailed, AddressDetail.SHORT))
+        assertEquals(AddressFormatter.format(broad), AddressFormatter.format(broad.copy(district = "Meerut")))
+        assertNull(AddressFormatter.format(AddressParts()))
+    }
+
+    @Test
+    fun bothCoordinatesAllowImmediateCompatibleUpgradeAndKeepRicherAddress() {
+        for ((start, next) in listOf(earlier to latest, latest to earlier)) {
+            val stabilizer = AddressStabilizer()
+            assertEquals(broad, stabilizer.onLookup(broad, start, 0L))
+            assertEquals(detailed, stabilizer.onLookup(detailed, next, 1_000L))
+            assertEquals(detailed, stabilizer.onLookup(broad, start, 60_000L))
         }
     }
 
     @Test
-    fun `opted-in house numbers still need two agreeing lookups`() {
+    fun conflictingHouseNeedsRepeatedResponseAfterHold() {
         val stabilizer = AddressStabilizer()
-        assertEquals(
-            "Nav Shakti Dham, Ganga Nagar, Meerut, Uttar Pradesh 250001, India",
-            stabilizer.onLookup(parts("98"), desk, 0L, showHouseNumbers = true)
-        )
-        assertEquals(
-            "98 Nav Shakti Dham, Ganga Nagar, Meerut, Uttar Pradesh 250001, India",
-            stabilizer.onLookup(parts("98"), desk.jitter(1), 20_000L, showHouseNumbers = true)
-        )
+        val other = detailed.copy(houseNumber = "88", addressLines = emptyList())
+        stabilizer.onLookup(detailed, earlier, 0L)
+        assertEquals(detailed, stabilizer.onLookup(other, latest, 10_000L))
+        assertEquals(detailed, stabilizer.onLookup(other, latest, 20_000L))
+        assertEquals(other, stabilizer.onLookup(other, latest, 31_000L))
     }
 
     @Test
-    fun `opted-in house numbers that disagree stay hidden`() {
+    fun realMovementAcceptsNewAddressAndDoesNotMergeDifferentPlaces() {
         val stabilizer = AddressStabilizer()
-        stabilizer.onLookup(parts("60"), desk, 0L, showHouseNumbers = true)
-        val shown = stabilizer.onLookup(parts("79"), desk.jitter(1), 20_000L, showHouseNumbers = true)
-        assertEquals("Nav Shakti Dham, Ganga Nagar, Meerut, Uttar Pradesh 250001, India", shown)
+        stabilizer.onLookup(detailed, earlier, 0L)
+        val other = broad.copy(locality = "Delhi")
+        assertEquals(other, stabilizer.onLookup(other, earlier.copy(latitude = 29.02), 1_000L))
     }
 
     @Test
-    fun `small reported accuracy alone does not confirm a house number`() {
-        val stabilizer = AddressStabilizer()
-        val shown = stabilizer.onLookup(parts("98"), location(29.00789, 77.767665, accuracy = 1f), 0L, showHouseNumbers = true)
-        assertEquals("Nav Shakti Dham, Ganga Nagar, Meerut, Uttar Pradesh 250001, India", shown)
+    fun cachePreservesRawComponentsForChangingDetailWithoutLookup() {
+        val cache = AddressCache()
+        cache.put(detailed, earlier, 0L)
+        val cached = cache.get(latest, 1_000L)!!.parts
+        assertEquals(AddressFormatter.format(detailed, AddressDetail.SHORT), AddressFormatter.format(cached, AddressDetail.SHORT))
+        assertEquals(AddressFormatter.format(detailed), AddressFormatter.format(cached))
+        assertNull(cache.get(earlier.copy(latitude = 29.0082), 1_000L))
     }
-
-    @Test
-    fun `poor accuracy never confirms a house number`() {
-        val stabilizer = AddressStabilizer()
-        val vague = location(29.00789, 77.767665, accuracy = 25f)
-        stabilizer.onLookup(parts("98"), vague, 0L, showHouseNumbers = true)
-        val shown = stabilizer.onLookup(parts("98"), vague, 20_000L, showHouseNumbers = true)
-        assertEquals("Nav Shakti Dham, Ganga Nagar, Meerut, Uttar Pradesh 250001, India", shown)
-    }
-
-    @Test
-    fun `single different street while stationary is ignored`() {
-        val stabilizer = AddressStabilizer()
-        stabilizer.onLookup(parts(null), desk, 0L, showHouseNumbers = false)
-        val shown = stabilizer.onLookup(parts(null, street = "Garh Road"), desk.jitter(1), 40_000L, showHouseNumbers = false)
-        assertEquals("Nav Shakti Dham, Ganga Nagar, Meerut, Uttar Pradesh 250001, India", shown)
-    }
-
-    @Test
-    fun `repeated different street replaces address only after the hold window`() {
-        val stabilizer = AddressStabilizer()
-        stabilizer.onLookup(parts(null), desk, 0L, showHouseNumbers = false)
-        stabilizer.onLookup(parts(null, street = "Garh Road"), desk, 10_000L, showHouseNumbers = false)
-        assertEquals(
-            "Nav Shakti Dham, Ganga Nagar, Meerut, Uttar Pradesh 250001, India",
-            stabilizer.onLookup(parts(null, street = "Garh Road"), desk, 20_000L, showHouseNumbers = false)
-        )
-        assertEquals(
-            "Garh Road, Ganga Nagar, Meerut, Uttar Pradesh 250001, India",
-            stabilizer.onLookup(parts(null, street = "Garh Road"), desk, 31_000L, showHouseNumbers = false)
-        )
-    }
-
-    @Test
-    fun `real movement updates the address immediately`() {
-        val stabilizer = AddressStabilizer()
-        stabilizer.onLookup(parts(null), desk, 0L, showHouseNumbers = false)
-        val moved = location(29.0110, 77.7677, accuracy = 5f) // about 350 m north
-        assertEquals(
-            "Garh Road, Ganga Nagar, Meerut, Uttar Pradesh 250001, India",
-            stabilizer.onLookup(parts(null, street = "Garh Road"), moved, 1_000L, showHouseNumbers = false)
-        )
-    }
-
-    private fun LocationStamp.jitter(step: Int) = copy(latitude = latitude + 0.00002 * (step % 3), longitude = longitude - 0.00002 * (step % 2))
-
-    private fun location(lat: Double, lon: Double, accuracy: Float) =
-        LocationStamp(lat, lon, accuracy, measuredAtMillis = 0L, altitudeMeters = null, speedMetersPerSecond = null)
 }

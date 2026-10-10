@@ -136,7 +136,8 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
                 uris = photos,
                 preferences = settings.stamp.copy(enabled = true),
                 logo = logo,
-                jpegQuality = settings.storage.jpegQuality
+                jpegQuality = settings.storage.jpegQuality,
+                addressDetail = settings.location.addressDetail
             ) { done -> _state.update { it.copy(batchProgress = done to photos.size) } }
             _state.update { it.copy(batchProgress = null, message = GalleryMessage.BatchFinished(result)) }
             refresh()

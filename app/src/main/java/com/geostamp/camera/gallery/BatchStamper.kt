@@ -14,6 +14,7 @@ import com.geostamp.camera.capture.PhotoMetadata
 import com.geostamp.camera.capture.PhotoProcessor
 import com.geostamp.camera.capture.StampRequest
 import com.geostamp.camera.environment.EnvironmentRepository
+import com.geostamp.camera.environment.AddressDetail
 import com.geostamp.camera.location.LocationStamp
 import com.geostamp.camera.stamps.StampData
 import com.geostamp.camera.stamps.StampPreferences
@@ -39,12 +40,13 @@ class BatchStamper(
         preferences: StampPreferences,
         logo: Bitmap?,
         jpegQuality: Int,
+        addressDetail: AddressDetail = AddressDetail.DETAILED,
         onProgress: (done: Int) -> Unit
     ): BatchResult = withContext(Dispatchers.Default) {
         var stamped = 0
         var failed = 0
         uris.forEachIndexed { index, uri ->
-            runCatching { stampOne(uri, preferences, logo, jpegQuality) }
+            runCatching { stampOne(uri, preferences, logo, jpegQuality, addressDetail = addressDetail) }
                 .onSuccess { stamped++ }
                 .onFailure { failed++ }
             onProgress(index + 1)
@@ -72,7 +74,8 @@ class BatchStamper(
         logo: Bitmap?,
         jpegQuality: Int,
         manualAddress: String? = null,
-        suffix: String = BATCH_SUFFIX
+        suffix: String = BATCH_SUFFIX,
+        addressDetail: AddressDetail = AddressDetail.DETAILED
     ): Uri {
         val exif = resolver.openInputStream(uri)?.use { ExifInterface(it) } ?: error("Unreadable photo")
         val takenAt = exif.dateTimeOriginalMillis() ?: System.currentTimeMillis()
@@ -87,7 +90,7 @@ class BatchStamper(
                 provider = "exif"
             )
         }
-        val nearby = environment.forCapture(location)
+        val nearby = environment.forCapture(location, addressDetail)
         val bitmap = decode(uri, exif.rotationDegrees)
         val address = AddressChoice.effective(nearby.address?.value, manualAddress?.let { AddressOverride(it, AddressEditScope.NEXT_CAPTURE) })
         val request = StampRequest(

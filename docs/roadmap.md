@@ -1,5 +1,11 @@
 # Development roadmap
 
+Current implementation status (2026-10-10): detailed address formatting, selectable
+detail levels, map thumbnails, stamped video, templates and manual address editing
+are implemented. Address lookup and map thumbnails now default on; weather remains
+off. Saved service choices and optional location permission are preserved. The
+milestones below retain outstanding device and release work.
+
 ## Milestone 1 — source baseline
 - [x] Android Gradle project and permissions
 - [x] CameraX preview and JPEG capture code
@@ -16,7 +22,7 @@
 - [x] Capture-time location freshness and accuracy threshold
 - [x] Handle permission denial and disabled GPS
 - [x] Initial real-device stamped capture test
-- [ ] Optional unmodified original
+- [x] Optional unmodified original
 - [ ] Camera rotation, EXIF orientation, lifecycle and memory tests
 - [x] Automated unit tests and CI build workflow
 
@@ -27,12 +33,12 @@
 - [x] Compass sensor integration with calibration status
 - [x] Magnetic heading with true-heading correction when location is available
 - [x] Initial real-device GPS and compass display test
-- [ ] Full address via opt-in reverse geocoding
+- [x] Complete provider addresses with Detailed / Standard / Short formatting; lookup enabled by default
 - [ ] Expose map links in the UI
 - [ ] Physical-device validation for approximate location, weak signal and provider-disabled states
 
 ## Milestone 4 — stamp customization
-- [ ] Opt-in address geocoding
-- [ ] Compass and customizable templates
-- [ ] Optional map thumbnail, optional weather
+- [x] Switchable address geocoding enabled by default
+- [x] Compass and customizable templates
+- [x] Switchable map thumbnail enabled by default; opt-in weather
 - [ ] Privacy policy, store listing and release testing
