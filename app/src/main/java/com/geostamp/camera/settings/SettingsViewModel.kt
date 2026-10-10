@@ -14,7 +14,8 @@ import androidx.lifecycle.viewModelScope
 import com.geostamp.camera.appContainer
 import com.geostamp.camera.location.LocationStamp
 import com.geostamp.camera.sensors.CompassAccuracy
-import com.geostamp.camera.sensors.CompassReading
+import com.geostamp.camera.sensors.HeadingKind
+import com.geostamp.camera.sensors.HeadingSnapshot
 import com.geostamp.camera.stamps.StampData
 import com.geostamp.camera.stamps.StampStyle
 import com.geostamp.camera.stamps.WeatherCondition
@@ -50,6 +51,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         .mapLatest { (appSettings, logoBitmap) -> renderPreview(appSettings, logoBitmap) }
         .flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(2_000), null)
+
+    val hasCompass: Boolean get() = container.compassRepository.capabilities.hasCompass
 
     fun update(transform: (AppSettings) -> AppSettings) {
         viewModelScope.launch { repository.update(transform) }
@@ -88,7 +91,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         val data = StampData(
             capturedAtMillis = System.currentTimeMillis(),
             location = live ?: SAMPLE_LOCATION,
-            heading = container.compassRepository.latestReading ?: SAMPLE_HEADING,
+            heading = container.compassRepository.heading.value ?: SAMPLE_HEADING,
             address = nearby.address?.value ?: SAMPLE_ADDRESS,
             weather = nearby.weather?.value ?: SAMPLE_WEATHER.copy(observedAtMillis = System.currentTimeMillis())
         )
@@ -134,7 +137,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         const val PREVIEW_WIDTH = 900
         const val PREVIEW_HEIGHT = 1200
         val SAMPLE_LOCATION = LocationStamp(28.613900, 77.209000, 5f, 0L, 216.0, 0f, provider = "sample")
-        val SAMPLE_HEADING = CompassReading(25f, 25f, CompassAccuracy.HIGH)
+        val SAMPLE_HEADING = HeadingSnapshot(25, HeadingKind.TRUE_HEADING, CompassAccuracy.HIGH)
         const val SAMPLE_ADDRESS = "Janpath, New Delhi, Delhi 110001, India"
         val SAMPLE_WEATHER = WeatherReading(24.0, WeatherCondition.CLEAR, 0L)
     }

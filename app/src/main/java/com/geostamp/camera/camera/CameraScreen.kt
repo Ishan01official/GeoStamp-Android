@@ -30,7 +30,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.GpsNotFixed
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -225,7 +226,7 @@ private fun CameraScreen(
     val settings = viewModel.settings.collectAsStateWithLifecycle().value ?: return
     val capture by viewModel.capture.collectAsStateWithLifecycle()
     val location by viewModel.location.collectAsStateWithLifecycle()
-    val compass by viewModel.compass.collectAsStateWithLifecycle()
+    val heading by viewModel.heading.collectAsStateWithLifecycle()
     val liveStamp by viewModel.liveStamp.collectAsStateWithLifecycle()
     val detectedAddress by viewModel.detectedAddress.collectAsStateWithLifecycle()
     val addressOverride by viewModel.addressOverride.collectAsStateWithLifecycle()
@@ -249,6 +250,8 @@ private fun CameraScreen(
     }
     LaunchedEffect(lifecycleOwner) { viewModel.session.bind(lifecycleOwner) }
 
+    val gpsNotReady by viewModel.gpsNotReady.collectAsStateWithLifecycle()
+    val savedWithoutGps = stringResource(R.string.gps_not_ready_saved)
     val savedPhoto = stringResource(R.string.saved_photo)
     val savedVideo = stringResource(R.string.saved_video)
     val viewAction = stringResource(R.string.action_view)
@@ -263,6 +266,10 @@ private fun CameraScreen(
                     snackbar.currentSnackbarData?.dismiss()
                     val result = snackbar.showSnackbar(if (event.isVideo) savedVideo else savedPhoto, actionLabel = viewAction)
                     if (result == SnackbarResult.ActionPerformed) onOpenMedia(event.uri)
+                }
+                CameraEvent.SavedWithoutGps -> scope.launch {
+                    snackbar.currentSnackbarData?.dismiss()
+                    snackbar.showSnackbar(savedWithoutGps)
                 }
                 is CameraEvent.Failed -> scope.launch {
                     val message = context.getString(event.messageRes)
@@ -325,7 +332,8 @@ private fun CameraScreen(
         Column(Modifier.statusBarsPadding().fillMaxWidth()) {
             TopOverlay(
                 location = location,
-                compass = compass,
+                heading = heading,
+                hasCompass = viewModel.hasCompass,
                 maxAccuracyMeters = settings.location.maxAccuracyMeters,
                 simpleMode = settings.camera.simpleMode,
                 iconRotation = iconRotation,
@@ -344,7 +352,7 @@ private fun CameraScreen(
                         zoomState?.let { ZoomPresets.label(it.zoomRatio) }
                     ).filterNotNull().joinToString(" · "),
                     stringResource(R.string.diag_location) to (location?.displayText() ?: stringResource(R.string.diag_none)),
-                    stringResource(R.string.diag_compass) to (compass?.displayText() ?: stringResource(R.string.diag_none)),
+                    stringResource(R.string.diag_compass) to (heading?.let { "${it.cardinal} ${it.degrees}° · ${it.kind}" } ?: stringResource(R.string.diag_none)),
                     stringResource(R.string.diag_last_capture) to (capture.lastCaptureInfo ?: stringResource(R.string.diag_none))
                 )
             )
@@ -370,6 +378,7 @@ private fun CameraScreen(
             zoomPresets = zoomState?.let { ZoomPresets.forRange(it.minZoomRatio, it.maxZoomRatio) }.orEmpty(),
             zoomRatio = zoomState?.zoomRatio ?: 1f,
             stampEnabled = settings.stamp.enabled,
+            gpsNotReady = gpsNotReady,
             addressBar = if (settings.stamp.enabled && settings.stamp.fields.address && capture.recordingSeconds == null) {
                 { AddressBar(detectedAddress, addressOverride, onEdit = { showAddressEditor = true }, modifier = Modifier.padding(horizontal = Dimens.SpaceL)) }
             } else {
@@ -439,6 +448,7 @@ private fun BottomControls(
     zoomPresets: List<Float>,
     zoomRatio: Float,
     stampEnabled: Boolean,
+    gpsNotReady: Boolean,
     addressBar: (@Composable () -> Unit)?,
     simpleMode: Boolean,
     iconRotation: Float,
@@ -460,6 +470,8 @@ private fun BottomControls(
             capture.mode.isVideoMode() && capture.isProcessing -> CameraChip(stringResource(R.string.video_stamping_note))
             capture.mode.isPhotoMode() && !stampEnabled ->
                 CameraChip(stringResource(R.string.stamp_off_badge))
+            gpsNotReady && capture.recordingSeconds == null ->
+                CameraChip(stringResource(R.string.gps_not_ready), icon = Icons.Outlined.GpsNotFixed, iconTint = CameraColors.Warning)
         }
         addressBar?.invoke()
         if (!simpleMode) {

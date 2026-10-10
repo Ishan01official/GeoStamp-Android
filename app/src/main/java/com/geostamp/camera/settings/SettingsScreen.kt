@@ -146,14 +146,18 @@ fun SettingsScreen(viewModel: SettingsViewModel, onBack: () -> Unit, onOpenStamp
                         onSelect = { v -> update { it.copy(location = it.location.copy(displayRefresh = v)) } },
                         icon = Icons.Outlined.GpsFixed
                     )
-                    ChoiceRow(
-                        title = stringResource(R.string.setting_compass_smoothing),
-                        options = CompassSmoothing.entries,
-                        selected = settings.location.compassSmoothing,
-                        label = { stringResource(it.labelRes) },
-                        onSelect = { v -> update { it.copy(location = it.location.copy(compassSmoothing = v)) } },
-                        icon = Icons.Outlined.Explore
-                    )
+                    if (viewModel.hasCompass) {
+                        ChoiceRow(
+                            title = stringResource(R.string.setting_compass_smoothing),
+                            options = CompassSmoothing.entries,
+                            selected = settings.location.compassSmoothing,
+                            label = { stringResource(it.labelRes) },
+                            onSelect = { v -> update { it.copy(location = it.location.copy(compassSmoothing = v)) } },
+                            icon = Icons.Outlined.Explore
+                        )
+                    } else {
+                        InfoRow(stringResource(R.string.setting_no_compass), stringResource(R.string.setting_no_compass_summary), Icons.Outlined.Explore)
+                    }
                     SwitchRow(
                         title = stringResource(R.string.setting_address),
                         summary = stringResource(R.string.setting_address_summary),

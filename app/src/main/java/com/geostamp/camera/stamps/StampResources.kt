@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory
 import android.graphics.drawable.Drawable
 import androidx.core.content.ContextCompat
 import com.geostamp.camera.R
+import com.geostamp.camera.sensors.HeadingLabels
 import java.io.File
 
 /** Android resources for the stamp engine: localized labels, icons and the user's logo. */
@@ -15,11 +16,20 @@ class StampResources(private val context: Context) {
         return StampLabels(
             locationUnavailable = res.getString(R.string.stamp_location_unavailable),
             accuracy = res.getString(R.string.stamp_accuracy_format),
-            magneticSuffix = res.getString(R.string.stamp_magnetic_suffix),
+            heading = headingLabels(),
             altitude = res.getString(R.string.stamp_altitude_format),
             speed = res.getString(R.string.stamp_speed_format),
             weatherSource = res.getString(R.string.stamp_weather_source_format),
             weather = WeatherCondition.entries.associateWith { res.getString(weatherName(it)) }
+        )
+    }
+
+    fun headingLabels(): HeadingLabels {
+        val res = context.resources
+        return HeadingLabels(
+            trueHeading = res.getString(R.string.heading_true_format),
+            magneticHeading = res.getString(R.string.heading_magnetic_format),
+            course = res.getString(R.string.heading_course_format)
         )
     }
 

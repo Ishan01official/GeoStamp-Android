@@ -41,7 +41,6 @@
     <string name="gps_ready">लोकेशन तैयार</string>
     <string name="gps_improving">GPS सटीकता सुधर रही है</string>
     <string name="gps_unavailable">लोकेशन उपलब्ध नहीं</string>
-    <string name="compass_unavailable">कम्पास नहीं</string>
     <string name="compass_calibrate">कैलिब्रेट करें</string>
     <string name="permission_grant">कैमरा की अनुमति दें</string>
     <string name="permission_open_settings">ऐप सेटिंग्स खोलें</string>
@@ -227,7 +226,6 @@
 
     <string name="stamp_location_unavailable">लोकेशन उपलब्ध नहीं</string>
     <string name="stamp_accuracy_format">GPS ±%s मी</string>
-    <string name="stamp_magnetic_suffix">चुंबकीय</string>
     <string name="stamp_altitude_format">ऊँचाई %s मी</string>
     <string name="stamp_speed_format">%s किमी/घं</string>
     <string name="stamp_weather_source_format">Open-Meteo %s</string>
@@ -296,4 +294,13 @@
     <string name="address_edit_failed">बदली गई फ़ोटो सहेजी नहीं जा सकी। कुछ भी नहीं बदला गया।</string>
     <string name="address_edit_unavailable">इस फ़ोटो का स्टैम्प तस्वीर का हिस्सा है और कोई बिना स्टैम्प वाली मूल फ़ोटो सहेजी नहीं गई, इसलिए पता नहीं बदला जा सकता। आगे की फ़ोटो के लिए सेटिंग में \"मूल फ़ोटो रखें\" चालू करें।</string>
     <string name="address_edit_existing_note">बिना स्टैम्प वाली मूल फ़ोटो से नई स्टैम्प वाली प्रति बनेगी। दोनों मौजूदा फ़ोटो रखी जाएँगी और GPS निर्देशांक नहीं बदलेंगे।</string>
+    <string name="heading_true_format">%1$s %2$d° वास्तविक</string>
+    <string name="heading_magnetic_format">%1$s %2$d° चुंबकीय</string>
+    <string name="heading_course_format">चलने की दिशा %1$s %2$d°</string>
+    <string name="heading_waiting">दिशा खोजी जा रही है</string>
+    <string name="heading_unavailable">दिशा उपलब्ध नहीं</string>
+    <string name="gps_not_ready">GPS तैयार नहीं</string>
+    <string name="gps_not_ready_saved">GPS तैयार नहीं था। फ़ोटो बिना निर्देशांक के सहेजी गई।</string>
+    <string name="setting_no_compass">कम्पास सेंसर नहीं है</string>
+    <string name="setting_no_compass_summary">इस फ़ोन में मैग्नेटोमीटर नहीं है, इसलिए यह नहीं बता सकता कि कैमरा किस दिशा में है। चलते समय GeoStamp आपकी चलने की दिशा दिखा सकता है।</string>
 </resources>

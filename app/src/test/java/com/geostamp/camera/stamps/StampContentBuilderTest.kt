@@ -2,7 +2,8 @@ package com.geostamp.camera.stamps
 
 import com.geostamp.camera.location.LocationStamp
 import com.geostamp.camera.sensors.CompassAccuracy
-import com.geostamp.camera.sensors.CompassReading
+import com.geostamp.camera.sensors.HeadingKind
+import com.geostamp.camera.sensors.HeadingSnapshot
 import java.util.Locale
 import java.util.TimeZone
 import org.junit.Assert.assertEquals
@@ -21,7 +22,7 @@ class StampContentBuilderTest {
         altitudeMeters = 220.4,
         speedMetersPerSecond = 1.5f
     )
-    private val heading = CompassReading(magneticDegrees = 24f, trueDegrees = 25.2f, accuracy = CompassAccuracy.HIGH)
+    private val heading = HeadingSnapshot(25, HeadingKind.TRUE_HEADING, CompassAccuracy.HIGH)
 
     @Test
     fun professionalTemplateBuildsHierarchyFromRealData() {
@@ -35,7 +36,7 @@ class StampContentBuilderTest {
         assertEquals("1 January 1970 · 00:00:00", content.dateTime)
         assertEquals("Meerut, Uttar Pradesh, India", content.headline)
         assertEquals("29.007953, 77.767663", content.details[0].text)
-        assertEquals("GPS ±5 m · NE 25°", content.details[1].text)
+        assertEquals("GPS ±5 m · NE 25° true", content.details[1].text)
         assertTrue(content.showMap)
         assertFalse(content.compact)
     }
@@ -85,8 +86,16 @@ class StampContentBuilderTest {
     fun magneticHeadingIsLabelledWhenTrueNorthUnknown() {
         val prefs = StampPreferences(template = StampTemplate.MINIMAL)
             .let { it.withFields(it.fields.copy(heading = true)) }
-        val content = builder.build(StampData(0L, location, CompassReading(270f, null, CompassAccuracy.HIGH)), prefs)
-        assertEquals("W 270° mag", content.details[1].text)
+        val content = builder.build(StampData(0L, location, HeadingSnapshot(270, HeadingKind.MAGNETIC_HEADING, CompassAccuracy.HIGH)), prefs)
+        assertEquals("W 270° magnetic", content.details[1].text)
+    }
+
+    @Test
+    fun courseIsLabelledAsCourseNotHeading() {
+        val prefs = StampPreferences(template = StampTemplate.MINIMAL)
+            .let { it.withFields(it.fields.copy(heading = true)) }
+        val content = builder.build(StampData(0L, location, HeadingSnapshot(92, HeadingKind.COURSE, CompassAccuracy.UNKNOWN)), prefs)
+        assertEquals("Course E 92°", content.details[1].text)
     }
 
     @Test
@@ -101,12 +110,12 @@ class StampContentBuilderTest {
     }
 
     @Test
-    fun tinySpeedNoiseDisplaysAsStationary() {
+    fun stationarySpeedNoiseIsHidden() {
         val prefs = StampPreferences(template = StampTemplate.CLASSIC)
             .let { it.withFields(it.fields.copy(altitude = false, speed = true)) }
-        val content = builder.build(StampData(0L, location.copy(speedMetersPerSecond = 0.02f)), prefs)
+        val content = builder.build(StampData(0L, location.copy(speedMetersPerSecond = 0.06f)), prefs)
 
-        assertEquals("0 km/h", content.details[2].text)
+        assertTrue(content.details.none { it.text.contains("km/h") })
     }
 
     @Test

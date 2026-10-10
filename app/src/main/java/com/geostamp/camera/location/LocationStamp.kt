@@ -13,12 +13,19 @@ data class LocationStamp(
     val speedMetersPerSecond: Float?,
     val provider: String? = null,
     val approximate: Boolean = false,
-    val address: String? = null
+    val address: String? = null,
+    /** GNSS direction of travel (true north); only meaningful while moving. */
+    val bearingDegrees: Float? = null,
+    val bearingAccuracyDegrees: Float? = null
 ) {
     fun ageMillis(nowMillis: Long): Long = nowMillis - measuredAtMillis
 
+    /**
+     * GNSS fixes carry satellite time, which can run a few seconds ahead of a phone clock that has drifted.
+     * Such a fix is current, not "from the future", so a small negative age is tolerated.
+     */
     fun isFresh(nowMillis: Long, maxAgeMillis: Long = 30_000L): Boolean =
-        nowMillis >= measuredAtMillis && ageMillis(nowMillis) <= maxAgeMillis
+        ageMillis(nowMillis) >= -CLOCK_SKEW_TOLERANCE_MILLIS && ageMillis(nowMillis) <= maxAgeMillis
 
     /** False for sources without a measured accuracy, such as EXIF from imported photos. */
     val hasAccuracy: Boolean get() = !accuracyMeters.isNaN()
@@ -47,7 +54,11 @@ data class LocationStamp(
             speedMetersPerSecond = if (location.hasSpeed()) location.speed else null,
             provider = location.provider,
             approximate = approximate,
-            address = address
+            address = address,
+            bearingDegrees = if (location.hasBearing()) location.bearing else null,
+            bearingAccuracyDegrees = if (location.hasBearingAccuracy()) location.bearingAccuracyDegrees else null
         )
+
+        const val CLOCK_SKEW_TOLERANCE_MILLIS = 10_000L
     }
 }

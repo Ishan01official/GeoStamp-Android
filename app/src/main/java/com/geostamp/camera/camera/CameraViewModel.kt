@@ -82,6 +82,9 @@ sealed interface CameraEvent {
     data class Saved(val uri: Uri, val isVideo: Boolean) : CameraEvent
     data class Failed(val messageRes: Int, val detail: String? = null) : CameraEvent
     data object ShutterFeedback : CameraEvent
+
+    /** Non-blocking notice: the photo was saved, but without coordinates. Coordinates are never invented. */
+    data object SavedWithoutGps : CameraEvent
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -99,13 +102,29 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     val settings: StateFlow<AppSettings?> = settingsRepository.settings
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
     val location: StateFlow<LocationUpdate?> = locationRepository.updates
-    val compass = compassRepository.updates
+    /** The single heading snapshot used by both the top bar and the stamp. */
+    val heading = compassRepository.heading
+    val hasCompass: Boolean get() = compassRepository.capabilities.hasCompass
     val addressOverride: StateFlow<AddressOverride?> = addressOverrides.override
 
     /** The automatically detected address for the current stable location, shown in the edit dialog. */
     val detectedAddress: StateFlow<String?> = combine(location, environment.snapshot) { update, _ ->
         environment.forCapture((update as? LocationUpdate.Available)?.location).address?.value
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT), null)
+
+    /**
+     * True when location access exists but no fix is usable for stamping yet. Drives the small
+     * "GPS not ready" hint near the shutter; capture is still allowed.
+     */
+    val gpsNotReady: StateFlow<Boolean> = combine(location, settings.filterNotNull(), clockTicks()) { update, appSettings, now ->
+        when (update) {
+            null, LocationUpdate.PermissionDenied -> false
+            else -> locationRepository.latestLocation?.let {
+                it.isFresh(now, appSettings.location.maxAgeSeconds * 1000L) &&
+                    it.isAccurateEnough(appSettings.location.maxAccuracyMeters.toFloat())
+            } != true
+        }
+    }.distinctUntilChanged().stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT), false)
 
     fun setAddressOverride(text: String, scope: AddressEditScope) = addressOverrides.set(text, scope)
 
@@ -127,7 +146,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
 
     /** The stamp exactly as it would be burned in right now, rendered at preview scale. */
     val liveStamp: StateFlow<Bitmap?> = combine(
-        overlaySize, settings.filterNotNull(), location, compass, environment.snapshot, logo, clockTicks(), addressOverrides.override
+        overlaySize, settings.filterNotNull(), location, heading, environment.snapshot, logo, clockTicks(), addressOverrides.override
     ) { values ->
         @Suppress("UNCHECKED_CAST")
         LiveStampInput(
@@ -305,7 +324,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
             data = StampData(
                 capturedAtMillis = capturedAt,
                 location = fix,
-                heading = compassRepository.latestReading,
+                heading = compassRepository.heading.value,
                 address = address.text,
                 weather = nearby.weather?.value,
                 addressSource = address.source
@@ -317,6 +336,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         val options = SaveOptions(appSettings.storage.jpegQuality, appSettings.storage.saveOriginal)
         _capture.update { it.copy(isProcessing = true) }
         _events.trySend(CameraEvent.ShutterFeedback)
+        if (fix == null && location.value !is LocationUpdate.PermissionDenied) _events.trySend(CameraEvent.SavedWithoutGps)
 
         session.takePicture(captureExecutor, object : ImageCapture.OnImageCapturedCallback() {
             override fun onCaptureSuccess(image: ImageProxy) {
@@ -444,7 +464,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
             data = StampData(
                 capturedAtMillis = nowMillis,
                 location = fix,
-                heading = compassRepository.latestReading,
+                heading = compassRepository.heading.value,
                 address = address.text,
                 weather = nearby.weather?.value,
                 addressSource = address.source
@@ -516,7 +536,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         val scale = (LIVE_STAMP_MAX_EDGE.toFloat() / maxOf(width, height)).coerceAtMost(1f)
         val bitmap = Bitmap.createBitmap((width * scale).toInt().coerceAtLeast(1), (height * scale).toInt().coerceAtLeast(1), Bitmap.Config.ARGB_8888)
         val address = stampAddress(nearby.address?.value)
-        val data = StampData(input.nowMillis, fix, compassRepository.latestReading, address.text, nearby.weather?.value, address.source)
+        val data = StampData(input.nowMillis, fix, compassRepository.heading.value, address.text, nearby.weather?.value, address.source)
         val resources = container.stampResources
         val content = resources.contentBuilder().build(data, input.settings.stamp, nearby.map != null, input.logo != null)
         resources.renderer().render(

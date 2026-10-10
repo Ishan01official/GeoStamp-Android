@@ -1,5 +1,7 @@
 package com.geostamp.camera.stamps
 
+import com.geostamp.camera.sensors.HeadingLabels
+
 /** Render-ready stamp text with an explicit visual hierarchy. Independent of Android UI classes. */
 data class StampContent(
     val dateTime: String?,
@@ -36,7 +38,7 @@ enum class StampIcon { TIME, PLACE, COORDINATES, ACCURACY, ALTITUDE, WEATHER, NO
 data class StampLabels(
     val locationUnavailable: String = "Location unavailable",
     val accuracy: String = "GPS ±%s m",
-    val magneticSuffix: String = "mag",
+    val heading: HeadingLabels = HeadingLabels(),
     val altitude: String = "Alt %s m",
     val speed: String = "%s km/h",
     val weatherSource: String = "Open-Meteo %s",

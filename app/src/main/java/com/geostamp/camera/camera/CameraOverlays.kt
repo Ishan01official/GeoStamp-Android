@@ -24,6 +24,7 @@ import androidx.compose.material.icons.outlined.GpsFixed
 import androidx.compose.material.icons.outlined.GpsNotFixed
 import androidx.compose.material.icons.outlined.GpsOff
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Navigation
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,8 +45,10 @@ import androidx.compose.ui.unit.sp
 import com.geostamp.camera.R
 import com.geostamp.camera.location.LocationUpdate
 import com.geostamp.camera.sensors.CompassAccuracy
-import com.geostamp.camera.sensors.CompassHeading
-import com.geostamp.camera.sensors.CompassUpdate
+import com.geostamp.camera.sensors.HeadingFormatter
+import com.geostamp.camera.sensors.HeadingKind
+import com.geostamp.camera.sensors.HeadingLabels
+import com.geostamp.camera.sensors.HeadingSnapshot
 import com.geostamp.camera.ui.components.CameraChip
 import com.geostamp.camera.ui.components.CameraIconButton
 import com.geostamp.camera.ui.theme.CameraColors
@@ -57,7 +60,8 @@ import kotlin.math.roundToInt
 @Composable
 fun TopOverlay(
     location: LocationUpdate?,
-    compass: CompassUpdate?,
+    heading: HeadingSnapshot?,
+    hasCompass: Boolean,
     maxAccuracyMeters: Int,
     simpleMode: Boolean,
     iconRotation: Float,
@@ -69,7 +73,7 @@ fun TopOverlay(
 ) {
     Box(modifier.fillMaxWidth().padding(horizontal = Dimens.SpaceM, vertical = Dimens.SpaceS)) {
         GpsChip(location, maxAccuracyMeters, simpleMode, onLocationClick, Modifier.align(Alignment.CenterStart))
-        if (!simpleMode) CompassChip(compass, Modifier.align(Alignment.Center))
+        if (!simpleMode) HeadingChip(heading, hasCompass, Modifier.align(Alignment.Center))
         Row(Modifier.align(Alignment.CenterEnd), horizontalArrangement = Arrangement.spacedBy(Dimens.SpaceXs)) {
             CameraIconButton(
                 icon = Icons.Outlined.Info,
@@ -134,27 +138,35 @@ private fun GpsChip(location: LocationUpdate?, maxAccuracyMeters: Int, simpleMod
     )
 }
 
+/** Shows the same snapshot the stamp uses, labelled as compass heading or travel course. */
 @Composable
-private fun CompassChip(compass: CompassUpdate?, modifier: Modifier) {
-    when (compass) {
-        is CompassUpdate.Available -> {
-            val reading = compass.reading
-            val degrees = reading.displayDegrees.roundToInt() % 360
-            val text = if (reading.accuracy == CompassAccuracy.UNRELIABLE) {
-                "${CompassHeading.cardinal(reading.displayDegrees)} $degrees° · ${stringResource(R.string.compass_calibrate)}"
-            } else {
-                "${CompassHeading.cardinal(reading.displayDegrees)} $degrees°"
-            }
-            CameraChip(text = text, icon = Icons.Outlined.Explore, modifier = modifier)
+private fun HeadingChip(heading: HeadingSnapshot?, hasCompass: Boolean, modifier: Modifier) {
+    val labels = rememberHeadingLabels()
+    when {
+        heading != null -> {
+            val text = HeadingFormatter.format(heading, labels)
+            val calibrate = heading.accuracy == CompassAccuracy.UNRELIABLE && heading.kind != HeadingKind.COURSE
+            CameraChip(
+                text = if (calibrate) "$text · ${stringResource(R.string.compass_calibrate)}" else text,
+                icon = if (heading.kind == HeadingKind.COURSE) Icons.Outlined.Navigation else Icons.Outlined.Explore,
+                modifier = modifier
+            )
         }
-        CompassUpdate.Unavailable -> CameraChip(
-            text = stringResource(R.string.compass_unavailable),
+        else -> CameraChip(
+            text = stringResource(if (hasCompass) R.string.heading_waiting else R.string.heading_unavailable),
             icon = Icons.Outlined.Explore,
             iconTint = CameraColors.ContentMuted,
             modifier = modifier
         )
-        null -> Unit
     }
+}
+
+@Composable
+private fun rememberHeadingLabels(): HeadingLabels {
+    val trueHeading = stringResource(R.string.heading_true_format)
+    val magnetic = stringResource(R.string.heading_magnetic_format)
+    val course = stringResource(R.string.heading_course_format)
+    return remember(trueHeading, magnetic, course) { HeadingLabels(trueHeading, magnetic, course) }
 }
 
 /** Collapsible technical details; kept out of the primary UI. */

@@ -43,7 +43,6 @@
     <string name="gps_ready">Location ready</string>
     <string name="gps_improving">Improving GPS accuracy</string>
     <string name="gps_unavailable">Location unavailable</string>
-    <string name="compass_unavailable">No compass</string>
     <string name="compass_calibrate">Calibrate</string>
     <string name="permission_grant">Allow camera</string>
     <string name="permission_open_settings">Open app settings</string>
@@ -236,7 +235,6 @@
     <!-- Stamp labels (burned into photos) -->
     <string name="stamp_location_unavailable">Location unavailable</string>
     <string name="stamp_accuracy_format">GPS ±%s m</string>
-    <string name="stamp_magnetic_suffix">mag</string>
     <string name="stamp_altitude_format">Alt %s m</string>
     <string name="stamp_speed_format">%s km/h</string>
     <string name="stamp_weather_source_format">Open-Meteo %s</string>
@@ -306,4 +304,13 @@
     <string name="address_edit_failed">Could not save the edited photo. Nothing was changed.</string>
     <string name="address_edit_unavailable">This photo\'s stamp is part of the picture, and no unstamped original was saved, so its address cannot be changed. Turn on \"Keep original photos\" in Settings to edit future photos.</string>
     <string name="address_edit_existing_note">A new stamped copy is made from the unstamped original. Both existing photos are kept and GPS coordinates are not changed.</string>
+    <string name="heading_true_format">%1$s %2$d° true</string>
+    <string name="heading_magnetic_format">%1$s %2$d° magnetic</string>
+    <string name="heading_course_format">Course %1$s %2$d°</string>
+    <string name="heading_waiting">Finding direction</string>
+    <string name="heading_unavailable">Direction unavailable</string>
+    <string name="gps_not_ready">GPS not ready</string>
+    <string name="gps_not_ready_saved">GPS not ready. The photo was saved without coordinates.</string>
+    <string name="setting_no_compass">No compass sensor</string>
+    <string name="setting_no_compass_summary">This phone has no magnetometer, so it cannot tell which way the camera faces. While you move, GeoStamp can show your travel direction (course) instead.</string>
 </resources>
