@@ -3,7 +3,6 @@ package com.geostamp.camera.video
 import android.net.Uri
 import android.os.StatFs
 import android.util.Log
-import androidx.media3.common.util.UnstableApi
 import com.geostamp.camera.capture.MediaStoreWriter
 import com.geostamp.camera.capture.PhotoProcessor
 import java.io.File
@@ -40,7 +39,6 @@ sealed interface VideoOutcome {
  * stamping fails, is cancelled, or there is not enough space. Runs in the application scope so leaving
  * the camera screen does not lose the video.
  */
-@UnstableApi
 class VideoCaptureCoordinator(
     private val workDir: File,
     private val writer: MediaStoreWriter,
@@ -159,7 +157,9 @@ class VideoCaptureCoordinator(
                 }
             }
         }
-        runCatching { writer.deleteStalePendingVideos(System.currentTimeMillis() - STALE_PENDING_MILLIS) }
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            runCatching { writer.deleteStalePendingVideos(System.currentTimeMillis() - STALE_PENDING_MILLIS) }
+        }
         return recovered
     }
 

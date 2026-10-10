@@ -5,7 +5,9 @@ import android.content.ContentUris
 import android.content.ContentValues
 import android.graphics.Bitmap
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import androidx.annotation.RequiresApi
 import android.os.Environment
 import android.os.ParcelFileDescriptor
 import android.provider.MediaStore
@@ -75,6 +77,7 @@ class MediaStoreWriter(private val resolver: ContentResolver) {
     }
 
     /** Removes this app's own half-written videos left behind by an interrupted save. */
+    @RequiresApi(Build.VERSION_CODES.R)
     fun deleteStalePendingVideos(olderThanMillis: Long): Int {
         val args = Bundle().apply {
             putInt(MediaStore.QUERY_ARG_MATCH_PENDING, MediaStore.MATCH_ONLY)

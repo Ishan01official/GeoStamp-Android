@@ -12,7 +12,6 @@
     <string name="cd_switch_camera">Switch camera</string>
     <string name="cd_flash">Flash: %s</string>
     <string name="cd_aspect">Aspect ratio: %s</string>
-    <string name="cd_resolution">Resolution: %s</string>
     <string name="cd_grid_on">Grid lines on</string>
     <string name="cd_grid_off">Grid lines off</string>
     <string name="cd_timer">Timer: %s</string>
@@ -57,13 +56,10 @@
 
     <!-- Camera controls sheet -->
     <string name="controls_title">Camera controls</string>
-    <string name="ctl_flash">Flash</string>
-    <string name="ctl_aspect">Aspect ratio</string>
     <string name="ctl_resolution">Resolution</string>
     <string name="ctl_exposure">Exposure</string>
     <string name="ctl_exposure_unsupported">Not supported on this camera</string>
     <string name="ctl_grid">Grid lines</string>
-    <string name="ctl_timer">Timer</string>
     <string name="ctl_focus">Tap to focus</string>
     <string name="ctl_focus_summary">Tap the preview to focus and meter. Resets after 3 seconds.</string>
     <string name="ctl_simple_mode">Simple Camera Mode</string>
@@ -310,7 +306,6 @@
     <string name="video_stamping_preparing">Preparing to add the stamp…</string>
     <string name="video_stamping_progress">Adding stamp to video… %1$d%%</string>
     <string name="rec_status">REC %1$s / %2$s</string>
-    <string name="cd_recording_status">Recording, %1$d of %2$d seconds</string>
     <string name="rec_seconds_left">%1$d s left</string>
     <string name="rec_no_audio">No sound: microphone not allowed</string>
     <string name="player_pause">Pause</string>
@@ -335,4 +330,8 @@
     <string name="diagnostics_summary">Cameras, Dual Capture support and sensors on this phone</string>
     <string name="diagnostics_intro">What this phone reports about its cameras and sensors, and what GeoStamp observed when starting them. Share it when reporting a problem.</string>
     <string name="diagnostics_share">Share report</string>
+    <plurals name="cd_recording_status">
+        <item quantity="one">Recording, %1$d of %2$d second</item>
+        <item quantity="other">Recording, %1$d of %2$d seconds</item>
+    </plurals>
 </resources>

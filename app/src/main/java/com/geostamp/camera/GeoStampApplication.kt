@@ -18,8 +18,6 @@ import com.geostamp.camera.sensors.CompassMonitor
 import com.geostamp.camera.sensors.CompassRepository
 import com.geostamp.camera.settings.SettingsRepository
 import com.geostamp.camera.stamps.StampResources
-import androidx.annotation.OptIn
-import androidx.media3.common.util.UnstableApi
 import com.geostamp.camera.video.VideoCaptureCoordinator
 import com.geostamp.camera.video.VideoStampProcessor
 import java.io.File
@@ -64,7 +62,6 @@ class AppContainer(context: Context) {
         contentBuilder = { stampResources.contentBuilder() },
         renderer = { stampResources.renderer() }
     )
-    @OptIn(UnstableApi::class)
     val videoCapture = VideoCaptureCoordinator(
         workDir = File(appContext.noBackupFilesDir, "recordings"),
         writer = mediaStoreWriter,

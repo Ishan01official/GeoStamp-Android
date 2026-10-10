@@ -105,5 +105,6 @@ private class Camera2CapabilitySource(private val context: Context) : CameraCapa
         }
 
     override fun hasConcurrentFeature(): Boolean =
-        context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_CONCURRENT)
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+            context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_CONCURRENT)
 }

@@ -41,6 +41,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
@@ -217,7 +218,7 @@ fun RecordingBadge(seconds: Long?, limitSeconds: Long, hasAudio: Boolean, modifi
     if (seconds == null) return
     val remaining = (limitSeconds - seconds).coerceAtLeast(0)
     val status = stringResource(R.string.rec_status, formatClock(seconds), formatClock(limitSeconds))
-    val description = stringResource(R.string.cd_recording_status, seconds, limitSeconds)
+    val description = pluralStringResource(R.plurals.cd_recording_status, limitSeconds.toInt(), seconds.toInt(), limitSeconds.toInt())
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Dimens.SpaceXs), modifier = modifier) {
         Row(
             Modifier

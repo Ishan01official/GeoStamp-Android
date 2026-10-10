@@ -10,7 +10,6 @@
     <string name="cd_switch_camera">कैमरा बदलें</string>
     <string name="cd_flash">फ़्लैश: %s</string>
     <string name="cd_aspect">आस्पेक्ट रेशियो: %s</string>
-    <string name="cd_resolution">रिज़ॉल्यूशन: %s</string>
     <string name="cd_grid_on">ग्रिड लाइनें चालू</string>
     <string name="cd_grid_off">ग्रिड लाइनें बंद</string>
     <string name="cd_timer">टाइमर: %s</string>
@@ -53,13 +52,10 @@
 
 
     <string name="controls_title">कैमरा नियंत्रण</string>
-    <string name="ctl_flash">फ़्लैश</string>
-    <string name="ctl_aspect">आस्पेक्ट रेशियो</string>
     <string name="ctl_resolution">रिज़ॉल्यूशन</string>
     <string name="ctl_exposure">एक्सपोज़र</string>
     <string name="ctl_exposure_unsupported">इस कैमरे पर उपलब्ध नहीं</string>
     <string name="ctl_grid">ग्रिड लाइनें</string>
-    <string name="ctl_timer">टाइमर</string>
     <string name="ctl_focus">टैप करके फ़ोकस</string>
     <string name="ctl_focus_summary">फ़ोकस और मीटरिंग के लिए प्रीव्यू पर टैप करें। 3 सेकंड बाद रीसेट होता है।</string>
     <string name="ctl_simple_mode">सरल कैमरा मोड</string>
@@ -300,7 +296,6 @@
     <string name="video_stamping_preparing">स्टैम्प लगाने की तैयारी…</string>
     <string name="video_stamping_progress">वीडियो पर स्टैम्प लग रहा है… %1$d%%</string>
     <string name="rec_status">रिकॉर्डिंग %1$s / %2$s</string>
-    <string name="cd_recording_status">रिकॉर्डिंग चल रही है, %2$d में से %1$d सेकंड</string>
     <string name="rec_seconds_left">%1$d सेकंड बाकी</string>
     <string name="rec_no_audio">आवाज़ नहीं: माइक्रोफ़ोन की अनुमति नहीं</string>
     <string name="player_pause">रोकें</string>
@@ -325,4 +320,8 @@
     <string name="diagnostics_summary">इस फ़ोन के कैमरे, ड्यूल कैप्चर सपोर्ट और सेंसर</string>
     <string name="diagnostics_intro">यह फ़ोन अपने कैमरों और सेंसरों के बारे में क्या बताता है, और GeoStamp ने उन्हें चालू करते समय क्या देखा। समस्या बताते समय इसे साझा करें।</string>
     <string name="diagnostics_share">रिपोर्ट साझा करें</string>
+    <plurals name="cd_recording_status">
+        <item quantity="one">रिकॉर्डिंग चल रही है, %2$d में से %1$d सेकंड</item>
+        <item quantity="other">रिकॉर्डिंग चल रही है, %2$d में से %1$d सेकंड</item>
+    </plurals>
 </resources>

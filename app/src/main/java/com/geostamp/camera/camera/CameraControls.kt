@@ -75,9 +75,9 @@ fun SideControls(
     iconRotation: Float,
     onCameraChange: ((CameraSettings) -> CameraSettings) -> Unit,
     onOpenSheet: () -> Unit,
+    modifier: Modifier = Modifier,
     onMoveInset: () -> Unit = {},
-    onResizeInset: () -> Unit = {},
-    modifier: Modifier = Modifier
+    onResizeInset: () -> Unit = {}
 ) {
     Column(
         modifier

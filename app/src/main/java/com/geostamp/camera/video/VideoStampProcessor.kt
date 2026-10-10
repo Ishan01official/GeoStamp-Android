@@ -5,6 +5,7 @@ import android.graphics.Canvas
 import android.net.Uri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
+import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.effect.OverlayEffect
 import androidx.media3.effect.TextureOverlay
@@ -37,7 +38,7 @@ import kotlinx.coroutines.withContext
  * Decoding, GPU compositing and encoding run on Media3's own threads; audio is passed through unchanged
  * and orientation is preserved (frames are composed upright, rotation is written back as metadata).
  */
-@UnstableApi
+@OptIn(UnstableApi::class)
 class VideoStampProcessor(
     private val context: Context,
     private val contentBuilder: () -> StampContentBuilder,
